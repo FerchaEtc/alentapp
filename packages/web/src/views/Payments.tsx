@@ -133,11 +133,11 @@ export function PaymentsView() {
     }
   };
 
+  
   const handleToggleStatus = async (paymentId: string, currentStatus: string) => {
     try {
       let nextStatus: 'Pending' | 'Paid' | 'Canceled' = 'Pending';
 
-      // Definimos la rotación: Pendiente -> Pagado -> Cancelado -> Pendiente
       if (currentStatus === "Pending") {
         nextStatus = "Paid";
       } else if (currentStatus === "Paid") {
@@ -248,7 +248,10 @@ export function PaymentsView() {
                         <Badge 
                           as="button"
                           onClick={() => handleToggleStatus(p.id, p.status)}
-                          colorScheme={p.status === "Paid" ? "green" : "orange"} 
+                          colorScheme={
+                            p.status === "Paid" ? "green" : 
+                            p.status === "Canceled" ? "red" : "orange"
+                          } 
                           variant="solid"
                           borderRadius="md"
                           px="3"
@@ -263,7 +266,7 @@ export function PaymentsView() {
                             transform: "scale(0.95)"
                           }}
                         >
-                          {p.status === "Paid" ? "Pagado" : "Pendiente"}
+                          {p.status === "Paid" ? "Pagado" : p.status === "Canceled" ? "Cancelado" : "Pendiente"}
                         </Badge>
                       </Table.Cell>
                     </Table.Row>
