@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { NewPaymentUseCase } from '../application/NewPaymentUseCase.js';
 import { GetPaymentUseCase } from '../application/GetPaymentUseCase.js'; 
+import { UpdatePaymentUseCase } from '../application/UpdatePaymentUseCase.js'; 
 
 import { PrismaClient } from '../generated/client/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -12,7 +13,8 @@ const prisma = new PrismaClient({
 export class PaymentController {
   constructor(
     private readonly newPaymentUseCase: NewPaymentUseCase,
-    private readonly getPaymentUseCase: GetPaymentUseCase 
+    private readonly getPaymentUseCase: GetPaymentUseCase,
+    private readonly updatePaymentUseCase: UpdatePaymentUseCase 
   ) {}
 
   async create(request: FastifyRequest, reply: FastifyReply) {
@@ -36,7 +38,6 @@ export class PaymentController {
         return reply.status(400).send({ error: "Socio no encontrado." });
       }
 
-      
       let parsedDueDate: Date;
       if (body.dueDate && typeof body.dueDate === 'string') {
         const parts = body.dueDate.includes('/') ? body.dueDate.split('/') : body.dueDate.split('-');
@@ -53,7 +54,7 @@ export class PaymentController {
         parsedDueDate = new Date();
       }
 
-           const cleanPaymentData = {
+      const cleanPaymentData = {
         amount: Number(body.amount),
         month: Math.floor(Number(body.month)),
         year: Math.floor(Number(body.year)),
@@ -74,19 +75,16 @@ export class PaymentController {
     } catch (error: any) {
       console.error("ERROR CRÍTICO EN PAYMENT CONTROLLER:", error);
 
-    
       if (error.message?.includes('Unique constraint') || error.code === 'P2002') {
         return reply.status(409).send({ 
           error: "Ya existe un pago registrado para este socio en el mes y año seleccionados." 
         });
       }
 
-      
       if (error.name === 'ValidationError' || error.message?.includes('invalid')) {
         return reply.status(400).send({ error: error.message });
       }
 
-      
       return reply.status(500).send({ 
         error: "Ocurrió un error interno en el servidor al procesar el cobro." 
       });
@@ -115,8 +113,35 @@ export class PaymentController {
       return reply.status(200).send(payments);
 
     } catch (error: any) {
-      
       return reply.status(500).send({ error: "Error al obtener los pagos del socio." });
+    }
+  }
+
+  
+  async update(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { id } = request.params as { id: string };
+      const body = request.body as any;
+
+      const updatedPayment = await this.updatePaymentUseCase.execute({
+        id,
+        amount: body.amount ? Number(body.amount) : undefined,
+        status: body.status,
+        dueDate: body.dueDate ? new Date(body.dueDate) : undefined
+      });
+
+      return reply.status(200).send(updatedPayment);
+
+    } catch (error: any) {
+      console.error("ERROR EN UPDATE PAYMENT CONTROLLER:", error);
+
+      if (error.message.includes("no existe")) {
+        return reply.status(404).send({ error: error.message });
+      }
+
+      return reply.status(500).send({ 
+        error: "Ocurrió un error interno en el servidor al actualizar el cobro." 
+      });
     }
   }
 }
