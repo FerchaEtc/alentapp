@@ -11,7 +11,6 @@ import {
   Alert,
   Table,
   Separator,
-  Badge,
   HStack
 } from "@chakra-ui/react";
 import { LuCheck, LuX, LuReceipt, LuSearch } from "react-icons/lu";
@@ -134,19 +133,9 @@ export function PaymentsView() {
   };
 
   
-  const handleToggleStatus = async (paymentId: string, currentStatus: string) => {
+  const handleStatusChange = async (paymentId: string, newStatus: 'Pending' | 'Paid' | 'Canceled') => {
     try {
-      let nextStatus: 'Pending' | 'Paid' | 'Canceled' = 'Pending';
-
-      if (currentStatus === "Pending") {
-        nextStatus = "Paid";
-      } else if (currentStatus === "Paid") {
-        nextStatus = "Canceled";
-      } else if (currentStatus === "Canceled") {
-        nextStatus = "Pending";
-      }
-      
-      await updatePaymentStatus(paymentId, nextStatus);
+      await updatePaymentStatus(paymentId, newStatus);
       
       const socios = await membersService.getAll();
       const socioEncontrado = socios.find((s: any) => String(s.dni).trim() === searchDni.trim());
@@ -244,30 +233,30 @@ export function PaymentsView() {
                         {p.dueDate ? new Date(p.dueDate).toLocaleDateString("es-AR", { timeZone: "UTC" }) : "-"}
                       </Table.Cell>
                       <Table.Cell textAlign="right">
-                        
-                        <Badge 
-                          as="button"
-                          onClick={() => handleToggleStatus(p.id, p.status)}
-                          colorScheme={
-                            p.status === "Paid" ? "green" : 
-                            p.status === "Canceled" ? "red" : "orange"
-                          } 
-                          variant="solid"
-                          borderRadius="md"
-                          px="3"
-                          py="1"
-                          cursor="pointer"
-                          fontWeight="bold"
-                          _hover={{
-                            transform: "scale(1.05)",
-                            opacity: 0.9
-                          }}
-                          _active={{
-                            transform: "scale(0.95)"
+                        {/* 🛠️ SELECT DINÁMICO CON COLORES SEGÚN ESTADO */}
+                        <select
+                          value={p.status}
+                          onChange={(e) => handleStatusChange(p.id, e.target.value as any)}
+                          style={{
+                            backgroundColor: 
+                              p.status === "Paid" ? "#22c55e" : 
+                              p.status === "Canceled" ? "#ef4444" : "#f97316",
+                            color: "white",
+                            fontWeight: "bold",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            fontSize: "0.75rem",
+                            border: "none",
+                            cursor: "pointer",
+                            outline: "none",
+                            textAlign: "center",
+                            fontFamily: "inherit"
                           }}
                         >
-                          {p.status === "Paid" ? "Pagado" : p.status === "Canceled" ? "Cancelado" : "Pendiente"}
-                        </Badge>
+                          <option value="Pending" style={{ backgroundColor: "#white", color: "black" }}>Pendiente</option>
+                          <option value="Paid" style={{ backgroundColor: "#white", color: "black" }}>Pagado</option>
+                          <option value="Canceled" style={{ backgroundColor: "#white", color: "black" }}>Cancelado</option>
+                        </select>
                       </Table.Cell>
                     </Table.Row>
                   ))}
