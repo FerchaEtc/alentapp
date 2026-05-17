@@ -13,19 +13,20 @@ export class UpdatePaymentUseCase {
   ) {}
 
   async execute(input: UpdatePaymentInput) {
-    
     const existingPayment = await this.paymentRepository.findById(input.id);
-    
     
     if (!existingPayment) {
       throw new Error("NOT_FOUND"); 
     }
 
-    if (existingPayment.status === 'Paid') {
-      throw new Error("ALREADY_PAID"); 
-    }
     if (existingPayment.status === 'Canceled') {
       throw new Error("IS_CANCELED"); 
+    }
+
+    if (existingPayment.status === 'Paid') {
+      if (input.status !== 'Canceled') {
+        throw new Error("ALREADY_PAID"); 
+      }
     }
 
     const updatedData: any = {
@@ -36,6 +37,9 @@ export class UpdatePaymentUseCase {
 
     if (input.status === 'Paid') {
       updatedData.paymentDate = new Date(); 
+    } 
+    else if (input.status === 'Canceled') {
+      updatedData.paymentDate = null; 
     }
 
     return await this.paymentRepository.update(input.id, updatedData);
