@@ -2,13 +2,15 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { CreateEquipmentLoanUseCase } from '../application/CreateEquipmentLoanUseCase.js';
 import { UpdateEquipmentLoanUseCase } from '../application/UpdateEquipmentLoanUseCase.js';
 import { DeleteEquipmentLoanUseCase } from '../application/DeleteEquipmentLoanUseCase.js';
+import { GetEquipmentLoansUseCase } from '../application/GetEquipmentLoanUseCase.js';
 import { CreateEquipmentLoanRequest, UpdateEquipmentLoanRequest } from '@alentapp/shared';
 
 export class EquipmentLoanController {
     constructor(
         private readonly createEquipmentLoanUseCase: CreateEquipmentLoanUseCase,
         private readonly updateEquipmentLoanUseCase: UpdateEquipmentLoanUseCase,
-        private readonly deleteEquipmentLoanUseCase: DeleteEquipmentLoanUseCase
+        private readonly deleteEquipmentLoanUseCase: DeleteEquipmentLoanUseCase,
+        private readonly getEquipmentLoanUseCase: GetEquipmentLoansUseCase
     ) {}
 
     async create(
@@ -44,6 +46,15 @@ export class EquipmentLoanController {
             return reply.status(200).send({ data: loan });
         } catch (error: any) {
             return this.handleError(reply, error);
+        }
+    }
+
+    async get(_request: FastifyRequest, reply: FastifyReply) {
+        try {
+            const loans = await this.getEquipmentLoanUseCase.execute();
+            return reply.status(200).send({ data: loans });
+        } catch (error: any) {
+            return reply.status(500).send({ error: 'No se pudo obtener el listado' });
         }
     }
 

@@ -46,6 +46,13 @@ export class PostgresEquipmentLoanRepository implements EquipmentLoanRepository 
         return this.mapToDTO(loan as DBEquipmentLoan);
     }
 
+    async findAll(): Promise<EquipmentLoanEntity[]> {
+        const loans = await prisma.equipmentLoan.findMany({
+            orderBy: { loan_date: 'desc' }
+        });
+        return loans.map(loan => this.mapToDTO(loan as DBEquipmentLoan));
+    }
+
     async update(id: string, data: UpdateEquipmentLoanRequest): Promise<EquipmentLoanEntity> {
         const updatedLoan = await prisma.equipmentLoan.update({
             where: { id },
