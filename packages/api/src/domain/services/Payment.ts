@@ -1,4 +1,4 @@
-export async function updatePaymentStatus(id: string, status: 'Pending' | 'Paid' | 'Canceled'): Promise<any> {
+export async function updatePaymentStatus(id: string, status: 'Pending' | 'Paid' | 'Canceled' | 'Overdue'): Promise<any> {
 const response = await fetch(`${(import.meta as any).env.VITE_API_URL}/api/v1/payments/${id}`, {    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
