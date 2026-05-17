@@ -30,6 +30,7 @@ import { EquipmentLoanValidator } from './domain/services/EquipmentLoanValidator
 import { CreateEquipmentLoanUseCase } from './application/CreateEquipmentLoanUseCase.js';
 import { UpdateEquipmentLoanUseCase } from './application/UpdateEquipmentLoanUseCase.js';
 import { EquipmentLoanController } from './delivery/EquipmentLoanController.js';
+import { DeleteEquipmentLoanUseCase } from './application/DeleteEquipmentLoanUseCase.js';
 
 export function buildApp() {
     const server = Fastify({
@@ -85,8 +86,13 @@ export function buildApp() {
     const equipmentLoanRepo = new PostgresEquipmentLoanRepository();
     const equipmentLoanValidator = new EquipmentLoanValidator(memberRepo)
     const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo);
-    const updateEquipmentLoanUseCase = new UpdateEquipmentLoanUseCase(equipmentLoanRepo, equipmentLoanValidator) 
-    const equipmentLoanController = new EquipmentLoanController(createEquipmentLoanUseCase, updateEquipmentLoanUseCase);
+    const updateEquipmentLoanUseCase = new UpdateEquipmentLoanUseCase(equipmentLoanRepo, equipmentLoanValidator);
+    const deleteEquipmentLoanUseCase = new DeleteEquipmentLoanUseCase(equipmentLoanRepo);
+    const equipmentLoanController = new EquipmentLoanController(
+        createEquipmentLoanUseCase, 
+        updateEquipmentLoanUseCase, 
+        deleteEquipmentLoanUseCase
+    );
 
     // --- ENDPOINTS DE MIEMBROS ---
     server.get('/api/v1/socios', memberController.getAll.bind(memberController));
@@ -102,6 +108,7 @@ export function buildApp() {
     // --- Equipment Loan Route ---
     server.post('/api/v1/equipment-loans', equipmentLoanController.create.bind(equipmentLoanController));
     server.put('/api/v1/equipment-loans/:id', equipmentLoanController.update.bind(equipmentLoanController))
+    server.delete('/api/v1/equipment-loans/:id', equipmentLoanController.delete.bind(equipmentLoanController));
 
     // --- Sports Route ---
     server.post(SPORT_ENDPOINTS.base, sportController.create.bind(sportController));

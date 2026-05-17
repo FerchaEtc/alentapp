@@ -1,12 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { CreateEquipmentLoanUseCase } from '../application/CreateEquipmentLoanUseCase.js';
 import { UpdateEquipmentLoanUseCase } from '../application/UpdateEquipmentLoanUseCase.js';
+import { DeleteEquipmentLoanUseCase } from '../application/DeleteEquipmentLoanUseCase.js';
 import { CreateEquipmentLoanRequest, UpdateEquipmentLoanRequest } from '@alentapp/shared';
 
 export class EquipmentLoanController {
     constructor(
         private readonly createEquipmentLoanUseCase: CreateEquipmentLoanUseCase,
-        private readonly updateEquipmentLoanUseCase: UpdateEquipmentLoanUseCase
+        private readonly updateEquipmentLoanUseCase: UpdateEquipmentLoanUseCase,
+        private readonly deleteEquipmentLoanUseCase: DeleteEquipmentLoanUseCase
     ) {}
 
     async create(
@@ -45,6 +47,21 @@ export class EquipmentLoanController {
         }
     }
 
+    async delete(
+        request: FastifyRequest<{ Params: { id: string } }>,
+        reply: FastifyReply,
+    ) {
+        try {
+            const { id } = request.params;
+            
+            await this.deleteEquipmentLoanUseCase.execute(id);
+            
+            return reply.status(204).send();
+        } catch (error: any) {
+            return this.handleError(reply, error);
+        }
+    }
+
     // Manejo de errores
     private handleError(reply: FastifyReply, error: any) {
 
@@ -54,8 +71,9 @@ export class EquipmentLoanController {
         }
 
         // Socio nuevo no existe (400)
-        if (error.message.includes('socio referenciado no existe')) {
-            return reply.status(400).send({ error: error.message });
+        if (error.message.includes('socio referenciado no existe') || 
+            error.message.includes('estado ingresado no es válido')) {
+                return reply.status(400).send({ error: error.message });
         }
 
         // Categoría prohibida (403)
