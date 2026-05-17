@@ -61,6 +61,12 @@ export class PostgresEquipmentLoanRepository implements EquipmentLoanRepository 
         return this.mapToDTO(updatedLoan as DBEquipmentLoan);
     }
 
+    async delete(id: string): Promise<void> {
+        await prisma.equipmentLoan.delete({
+            where: { id },
+        });
+    }
+
     // Método privado para mapear el objeto de la base de datos al objeto del dominio
     private mapToDTO(loan: DBEquipmentLoan) {
         return {
