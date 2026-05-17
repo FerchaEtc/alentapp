@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/client/client.js';
 import { EquipmentLoanRepository, EquipmentLoanEntity } from '../domain/EquipmentLoanRepository.js';
-import { CreateEquipmentLoanRequest, EquipmentLoanStatus } from '@alentapp/shared';
+import { CreateEquipmentLoanRequest, UpdateEquipmentLoanRequest, EquipmentLoanStatus } from '@alentapp/shared';
 
 if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL environment variable is not set');
@@ -34,7 +34,31 @@ export class PostgresEquipmentLoanRepository implements EquipmentLoanRepository 
             },
         });
 
-        return this.mapToDTO(loan);
+        return this.mapToDTO(loan as DBEquipmentLoan);
+    }
+
+    async findById(id: string): Promise<EquipmentLoanEntity | null> {
+        const loan = await prisma.equipmentLoan.findUnique({
+            where: { id },
+        });
+
+        if (!loan) return null;
+        return this.mapToDTO(loan as DBEquipmentLoan);
+    }
+
+    async update(id: string, data: UpdateEquipmentLoanRequest): Promise<EquipmentLoanEntity> {
+        const updatedLoan = await prisma.equipmentLoan.update({
+            where: { id },
+            data: {
+                // Solo mapeamos si el valor existe en el objeto data
+                ...(data.item_name && { item_name: data.item_name }),
+                ...(data.status && { status: data.status }),
+                ...(data.due_date && { due_date: new Date(data.due_date) }),
+                ...(data.member_id && { member_id: data.member_id }),
+            },
+        });
+
+        return this.mapToDTO(updatedLoan as DBEquipmentLoan);
     }
 
     // Método privado para mapear el objeto de la base de datos al objeto del dominio

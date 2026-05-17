@@ -8,6 +8,7 @@ import { GetMembersUseCase } from './application/GetMembersUseCase.js';
 import { UpdateMemberUseCase } from './application/UpdateMemberUseCase.js'; 
 import { MemberController } from './delivery/MemberController.js';
 import { DeleteMemberUseCase } from './application/DeleteMemberUseCase.js';
+
 // --- IMPORTS DE PAGOS (PAYMENTS) ---
 import { PostgresPaymentRepository } from './infrastructure/PostgresPaymentRepository.js'; 
 import { NewPaymentUseCase } from './application/NewPaymentUseCase.js';
@@ -23,7 +24,9 @@ import { SportController } from './delivery/SportController.js';
 
 // --- Equipment Loan ---
 import { PostgresEquipmentLoanRepository } from './infrastructure/PostgresEquipmentLoanRepository.js';
+import { EquipmentLoanValidator } from './domain/services/EquipmentLoanValidator.js';
 import { CreateEquipmentLoanUseCase } from './application/CreateEquipmentLoanUseCase.js';
+import { UpdateEquipmentLoanUseCase } from './application/UpdateEquipmentLoanUseCase.js';
 import { EquipmentLoanController } from './delivery/EquipmentLoanController.js';
 
 export function buildApp() {
@@ -75,10 +78,12 @@ export function buildApp() {
     const getPaymentUseCase = new GetPaymentUseCase(paymentRepo); 
     const paymentController = new PaymentController(newPaymentUseCase, getPaymentUseCase);
 
-    // --- Equipment Loan ---
+    // --- INSTANCIACIÓN DE EQUIPMENT LOANS ---
     const equipmentLoanRepo = new PostgresEquipmentLoanRepository();
-    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo); 
-    const equipmentLoanController = new EquipmentLoanController(createEquipmentLoanUseCase);
+    const equipmentLoanValidator = new EquipmentLoanValidator(memberRepo)
+    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo);
+    const updateEquipmentLoanUseCase = new UpdateEquipmentLoanUseCase(equipmentLoanRepo, equipmentLoanValidator) 
+    const equipmentLoanController = new EquipmentLoanController(createEquipmentLoanUseCase, updateEquipmentLoanUseCase);
 
     // --- ENDPOINTS DE MIEMBROS ---
     server.get('/api/v1/socios', memberController.getAll.bind(memberController));
@@ -93,6 +98,7 @@ export function buildApp() {
 
     // --- Equipment Loan Route ---
     server.post('/api/v1/equipment-loans', equipmentLoanController.create.bind(equipmentLoanController));
+    server.put('/api/v1/equipment-loans/:id', equipmentLoanController.update.bind(equipmentLoanController))
 
     // --- Sports Route ---
     server.post('/api/v1/sports', sportController.create.bind(sportController));
