@@ -8,3 +8,10 @@ export interface CreateEquipmentLoanRequest {
   due_date: string;   
   member_id: string;   
 }
+
+export interface UpdateEquipmentLoanRequest {
+  item_name?: string;               // Opcional
+  status?: EquipmentLoanStatus;     // Opcional, pero restringido al enum
+  due_date?: string;                // Opcional
+  member_id?: string;               // Opcional
+}

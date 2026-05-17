@@ -1,4 +1,8 @@
-import { CreateEquipmentLoanRequest, EquipmentLoanStatus } from '@alentapp/shared';
+import { 
+    CreateEquipmentLoanRequest, 
+    UpdateEquipmentLoanRequest,
+    EquipmentLoanStatus 
+} from '@alentapp/shared';
 
 // El objeto que se debe cumplir con el puerto de salida del dominio
 export interface EquipmentLoanEntity {
@@ -12,4 +16,9 @@ export interface EquipmentLoanEntity {
 
 export interface EquipmentLoanRepository {
     create(loan: CreateEquipmentLoanRequest & { status: EquipmentLoanStatus }): Promise<EquipmentLoanEntity>;
+
+    update(id: string, data: UpdateEquipmentLoanRequest): Promise<EquipmentLoanEntity>;
+
+    // Para validar que el préstamo existe
+    findById(id: string): Promise<EquipmentLoanEntity | null>;
 }
