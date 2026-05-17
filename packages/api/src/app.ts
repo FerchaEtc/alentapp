@@ -75,6 +75,11 @@ export function buildApp() {
     const getPaymentUseCase = new GetPaymentUseCase(paymentRepo); 
     const paymentController = new PaymentController(newPaymentUseCase, getPaymentUseCase);
 
+    // --- Equipment Loan ---
+    const equipmentLoanRepo = new PostgresEquipmentLoanRepository();
+    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo); 
+    const equipmentLoanController = new EquipmentLoanController(createEquipmentLoanUseCase);
+
     // --- ENDPOINTS DE MIEMBROS ---
     server.get('/api/v1/socios', memberController.getAll.bind(memberController));
     server.post('/api/v1/socios', memberController.create.bind(memberController));
@@ -82,17 +87,9 @@ export function buildApp() {
     server.delete('/api/v1/socios/:id', memberController.delete.bind(memberController));
 
 
-    
-    server.post('/api/v1/sports', sportController.create.bind(sportController)); 
-    server.put('/api/v1/sports/:id', sportController.update.bind(sportController)) 
-
+    // --- ENDPOINTS DE PAGOS ---    
     server.post('/api/v1/payments', paymentController.create.bind(paymentController));
     server.get('/api/v1/payments/member/:memberId', paymentController.getByMember.bind(paymentController));
-
-    // --- Equipment Loan ---
-    const equipmentLoanRepo = new PostgresEquipmentLoanRepository();
-    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo); 
-    const equipmentLoanController = new EquipmentLoanController(createEquipmentLoanUseCase);
 
     // --- Equipment Loan Route ---
     server.post('/api/v1/equipment-loans', equipmentLoanController.create.bind(equipmentLoanController));
@@ -100,7 +97,6 @@ export function buildApp() {
     // --- Sports Route ---
     server.post('/api/v1/sports', sportController.create.bind(sportController));
     server.put('/api/v1/sports/:id', sportController.update.bind(sportController));
-
 
     server.get('/', async (req, rep) => {
         rep.status(200).send({ msg: 'asd' })
