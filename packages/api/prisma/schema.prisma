@@ -70,20 +70,7 @@ enum EquipmentLoanStatusEnum {
     Damaged
 }
 
-model Member {
-    id         String         @id @default(uuid())
-    dni        String         @unique
-    name       String
-    email      String         @unique
-    birthdate  DateTime?      @db.Date
-    category   MemberCategory
-    status     MemberStatus   @default(Activo)
-    created_at DateTime       @default(now())
 
-    equipment_loans EquipmentLoan[]
-
-    @@map("members") // Para que en la DB la tabla se llame 'members' en minúscula
-}
 
 model EquipmentLoan {
     id         String         @id @default(uuid())
