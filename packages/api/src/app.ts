@@ -22,6 +22,7 @@ import { UpdatePaymentUseCase } from './application/UpdatePaymentUseCase.js';
 import { PostgresSportRepository } from './infrastructure/PostgresSportRepository.js';
 import { SportValidator } from './domain/services/SportValidator.js';
 import { CreateSportUseCase } from './application/NewSportUseCase.js';
+import { GetSportsUseCase } from './application/GetSportsUseCase.js';
 import { UpdateSportUseCase } from './application/UpdateSportUseCase.js';
 import { DeleteSportUseCase } from './application/DeleteSportUseCase.js';
 import { SportController } from './delivery/SportController.js';
@@ -74,9 +75,15 @@ export function buildApp() {
     const sportRepo = new PostgresSportRepository();
     const sportValidator = new SportValidator(sportRepo);
     const createSportUseCase = new CreateSportUseCase(sportRepo, sportValidator);
+    const getSportsUseCase = new GetSportsUseCase(sportRepo);
     const updateSportUseCase = new UpdateSportUseCase(sportRepo, sportValidator);
     const deleteSportUseCase = new DeleteSportUseCase(sportRepo);
-    const sportController = new SportController(createSportUseCase, updateSportUseCase, deleteSportUseCase);
+    const sportController = new SportController(
+        createSportUseCase,
+        updateSportUseCase,
+        deleteSportUseCase,
+        getSportsUseCase,
+    );
 
     // --- INSTANCIACIÓN DE PAGOS ---
     const paymentRepo = new PostgresPaymentRepository();
@@ -115,6 +122,7 @@ export function buildApp() {
     server.delete('/api/v1/equipment-loans/:id', equipmentLoanController.delete.bind(equipmentLoanController));
 
     // --- Sports Route ---
+    server.get(SPORT_ENDPOINTS.base, sportController.getAll.bind(sportController));
     server.post(SPORT_ENDPOINTS.base, sportController.create.bind(sportController));
     server.put(SPORT_ENDPOINTS.byId(':id'), sportController.update.bind(sportController));
     server.delete(SPORT_ENDPOINTS.byId(':id'), sportController.delete.bind(sportController));
