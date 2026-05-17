@@ -209,7 +209,6 @@ export function PaymentsView() {
 
           {history.length === 0 ? (
             <Text p="4" bg="white" borderRadius="xl" fontSize="sm" color="gray.500" fontStyle="italic" borderWidth="1px" borderColor="gray.100">
-              Este socio no registra ningún pago previo en el sistema.
             </Text>
           ) : (
             <Box borderWidth="1px" borderColor="border.subtle" borderRadius="xl" overflow="hidden" bg="white">
@@ -233,7 +232,6 @@ export function PaymentsView() {
                         {p.dueDate ? new Date(p.dueDate).toLocaleDateString("es-AR", { timeZone: "UTC" }) : "-"}
                       </Table.Cell>
                       <Table.Cell textAlign="right">
-                        {/* 🛠️ SELECT DINÁMICO CON COLORES SEGÚN ESTADO */}
                         <select
                           value={p.status}
                           onChange={(e) => handleStatusChange(p.id, e.target.value as any)}
