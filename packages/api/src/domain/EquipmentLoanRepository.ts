@@ -16,10 +16,9 @@ export interface EquipmentLoanEntity {
 
 export interface EquipmentLoanRepository {
     create(loan: CreateEquipmentLoanRequest & { status: EquipmentLoanStatus }): Promise<EquipmentLoanEntity>;
-
     update(id: string, data: UpdateEquipmentLoanRequest): Promise<EquipmentLoanEntity>;
-    // Para validar que el préstamo existe
     findById(id: string): Promise<EquipmentLoanEntity | null>;
-
+    findAll(): Promise<EquipmentLoanEntity[]>;
     delete(id: string): Promise<void>;
 }
+
