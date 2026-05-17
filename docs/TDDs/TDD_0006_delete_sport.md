@@ -61,5 +61,4 @@ En `@alentapp/shared` se definirá el contrato mínimo necesario para que backen
 1. Ampliar `SportRepository` y `PostgresSportRepository` con `delete`.
 2. Crear la lógica de negocio en `DeleteSportUseCase` dentro de `src/application`.
 3. Crear el endpoint `DELETE /api/v1/sports/:id` en `SportController` dentro de `src/delivery`.
-4. Verificar la restricción por inscripciones asociadas desde el dominio.
-5. Conectar la acción desde `@alentapp/web` en el servicio `sports.ts`.
+4. Conectar la acción desde `@alentapp/web` en el servicio `sports.ts`.

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { SPORT_ENDPOINTS } from '@alentapp/shared';
 import { PostgresMemberRepository } from './infrastructure/PostgresMemberRepository.js';
 import { MemberValidator } from './domain/services/MemberValidator.js';
 import { CreateMemberUseCase } from './application/NewMemberUseCase.js';
@@ -20,6 +21,7 @@ import { PostgresSportRepository } from './infrastructure/PostgresSportRepositor
 import { SportValidator } from './domain/services/SportValidator.js';
 import { CreateSportUseCase } from './application/NewSportUseCase.js';
 import { UpdateSportUseCase } from './application/UpdateSportUseCase.js';
+import { DeleteSportUseCase } from './application/DeleteSportUseCase.js';
 import { SportController } from './delivery/SportController.js';
 
 // --- Equipment Loan ---
@@ -70,7 +72,8 @@ export function buildApp() {
     const sportValidator = new SportValidator(sportRepo);
     const createSportUseCase = new CreateSportUseCase(sportRepo, sportValidator);
     const updateSportUseCase = new UpdateSportUseCase(sportRepo, sportValidator);
-    const sportController = new SportController(createSportUseCase, updateSportUseCase);
+    const deleteSportUseCase = new DeleteSportUseCase(sportRepo);
+    const sportController = new SportController(createSportUseCase, updateSportUseCase, deleteSportUseCase);
 
     // --- INSTANCIACIÓN DE PAGOS ---
     const paymentRepo = new PostgresPaymentRepository();
@@ -101,8 +104,9 @@ export function buildApp() {
     server.put('/api/v1/equipment-loans/:id', equipmentLoanController.update.bind(equipmentLoanController))
 
     // --- Sports Route ---
-    server.post('/api/v1/sports', sportController.create.bind(sportController));
-    server.put('/api/v1/sports/:id', sportController.update.bind(sportController));
+    server.post(SPORT_ENDPOINTS.base, sportController.create.bind(sportController));
+    server.put(SPORT_ENDPOINTS.byId(':id'), sportController.update.bind(sportController));
+    server.delete(SPORT_ENDPOINTS.byId(':id'), sportController.delete.bind(sportController));
 
     server.get('/', async (req, rep) => {
         rep.status(200).send({ msg: 'asd' })
