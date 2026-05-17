@@ -123,10 +123,10 @@ export class PaymentController {
       const { id } = request.params as { id: string };
       const body = request.body as any;
 
-      // Según tu diseño de API (Punto 2.1), el body debe mandar { "status": "PAID" }
+      
       const updatedPayment = await this.updatePaymentUseCase.execute({
         id,
-        status: body.status, // Tomará 'Paid' desde el request
+        status: body.status, 
         amount: body.amount ? Number(body.amount) : undefined,
         dueDate: body.dueDate ? new Date(body.dueDate) : undefined
       });
@@ -134,20 +134,18 @@ export class PaymentController {
       return reply.status(200).send(updatedPayment);
 
     } catch (error: any) {
-      console.error("❌ ERROR EN UPDATE PAYMENT CONTROLLER:", error);
+      console.error(" ERROR EN UPDATE PAYMENT CONTROLLER:", error);
 
-      // Mapeo estricto de tu tabla de Condiciones de Borde (Punto 4)
       if (error.message === "NOT_FOUND") {
-        return reply.status(404).send({ error: "Payment inexistente." }); // 404 No existe
+        return reply.status(404).send({ error: "Payment inexistente." }); 
       }
       if (error.message === "ALREADY_PAID") {
-        return reply.status(400).send({ error: "La cuota ya se encuentra pagada." }); // 400 Ya pagado
+        return reply.status(400).send({ error: "La cuota ya se encuentra pagada." }); 
       }
       if (error.message === "IS_CANCELED") {
-        return reply.status(400).send({ error: "No se puede pagar una cuota que ya fue cancelada." }); // 400 Cancelado
+        return reply.status(400).send({ error: "No se puede pagar una cuota que ya fue cancelada." });
       }
 
-      // Error genérico / Base de datos
       return reply.status(500).send({ 
         error: "Ocurrió un error interno en el servidor al actualizar el cobro." 
       });
