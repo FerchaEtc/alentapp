@@ -77,6 +77,19 @@ export class PostgresSportRepository implements SportRepository {
         }
     }
 
+    async delete(id: string): Promise<void> {
+        try {
+            await prisma.sport.delete({
+                where: { id },
+            });
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                throw new Error('El deporte no existe');
+            }
+            throw error;
+        }
+    }
+
     private mapToDTO(sport: DBSport): SportDTO {
         return {
             id: sport.id,
