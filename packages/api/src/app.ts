@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { SPORT_ENDPOINTS } from '@alentapp/shared';
 import { PostgresMemberRepository } from './infrastructure/PostgresMemberRepository.js';
 import { MemberValidator } from './domain/services/MemberValidator.js';
 import { CreateMemberUseCase } from './application/NewMemberUseCase.js';
@@ -8,6 +9,7 @@ import { GetMembersUseCase } from './application/GetMembersUseCase.js';
 import { UpdateMemberUseCase } from './application/UpdateMemberUseCase.js'; 
 import { MemberController } from './delivery/MemberController.js';
 import { DeleteMemberUseCase } from './application/DeleteMemberUseCase.js';
+
 // --- IMPORTS DE PAGOS (PAYMENTS) ---
 import { PostgresPaymentRepository } from './infrastructure/PostgresPaymentRepository.js'; 
 import { NewPaymentUseCase } from './application/NewPaymentUseCase.js';
@@ -21,11 +23,14 @@ import { PostgresSportRepository } from './infrastructure/PostgresSportRepositor
 import { SportValidator } from './domain/services/SportValidator.js';
 import { CreateSportUseCase } from './application/NewSportUseCase.js';
 import { UpdateSportUseCase } from './application/UpdateSportUseCase.js';
+import { DeleteSportUseCase } from './application/DeleteSportUseCase.js';
 import { SportController } from './delivery/SportController.js';
 
 // --- Equipment Loan ---
 import { PostgresEquipmentLoanRepository } from './infrastructure/PostgresEquipmentLoanRepository.js';
+import { EquipmentLoanValidator } from './domain/services/EquipmentLoanValidator.js';
 import { CreateEquipmentLoanUseCase } from './application/CreateEquipmentLoanUseCase.js';
+import { UpdateEquipmentLoanUseCase } from './application/UpdateEquipmentLoanUseCase.js';
 import { EquipmentLoanController } from './delivery/EquipmentLoanController.js';
 
 export function buildApp() {
@@ -69,7 +74,8 @@ export function buildApp() {
     const sportValidator = new SportValidator(sportRepo);
     const createSportUseCase = new CreateSportUseCase(sportRepo, sportValidator);
     const updateSportUseCase = new UpdateSportUseCase(sportRepo, sportValidator);
-    const sportController = new SportController(createSportUseCase, updateSportUseCase);
+    const deleteSportUseCase = new DeleteSportUseCase(sportRepo);
+    const sportController = new SportController(createSportUseCase, updateSportUseCase, deleteSportUseCase);
 
     // --- INSTANCIACIÓN DE PAGOS ---
     const paymentRepo = new PostgresPaymentRepository();
@@ -78,10 +84,12 @@ export function buildApp() {
     const updatePaymentUseCase = new UpdatePaymentUseCase(paymentRepo);
     const paymentController = new PaymentController(newPaymentUseCase,getPaymentUseCase,updatePaymentUseCase );
 
-    // --- Equipment Loan ---
+    // --- INSTANCIACIÓN DE EQUIPMENT LOANS ---
     const equipmentLoanRepo = new PostgresEquipmentLoanRepository();
-    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo); 
-    const equipmentLoanController = new EquipmentLoanController(createEquipmentLoanUseCase);
+    const equipmentLoanValidator = new EquipmentLoanValidator(memberRepo)
+    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo);
+    const updateEquipmentLoanUseCase = new UpdateEquipmentLoanUseCase(equipmentLoanRepo, equipmentLoanValidator) 
+    const equipmentLoanController = new EquipmentLoanController(createEquipmentLoanUseCase, updateEquipmentLoanUseCase);
 
     // --- ENDPOINTS DE MIEMBROS ---
     server.get('/api/v1/socios', memberController.getAll.bind(memberController));
@@ -97,10 +105,12 @@ export function buildApp() {
 
     // --- Equipment Loan Route ---
     server.post('/api/v1/equipment-loans', equipmentLoanController.create.bind(equipmentLoanController));
+    server.put('/api/v1/equipment-loans/:id', equipmentLoanController.update.bind(equipmentLoanController))
 
     // --- Sports Route ---
-    server.post('/api/v1/sports', sportController.create.bind(sportController));
-    server.put('/api/v1/sports/:id', sportController.update.bind(sportController));
+    server.post(SPORT_ENDPOINTS.base, sportController.create.bind(sportController));
+    server.put(SPORT_ENDPOINTS.byId(':id'), sportController.update.bind(sportController));
+    server.delete(SPORT_ENDPOINTS.byId(':id'), sportController.delete.bind(sportController));
 
     server.get('/', async (req, rep) => {
         rep.status(200).send({ msg: 'asd' })

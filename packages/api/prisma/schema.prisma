@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/client"
@@ -7,7 +6,6 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-
 
 enum MemberCategory {
   Pleno
@@ -28,9 +26,14 @@ enum PaymentStatus {
   Overdue
 }
 
+enum EquipmentLoanStatusEnum {
+  Loaned
+  Returned
+  Damaged
+}
 
 model Member {
-  id         String         @id @default(uuid()) @db.Uuid 
+  id         String         @id @default(uuid())
   dni        String         @unique
   name       String
   email      String         @unique
@@ -38,59 +41,47 @@ model Member {
   category   MemberCategory
   status     MemberStatus   @default(Activo)
   created_at DateTime       @default(now())
-  
-  // Relación uno a muchos hacia pagos
-  payments   Payment[]
+
+  payments        Payment[]
+  equipment_loans EquipmentLoan[]
 
   @@map("members")
 }
 
-
 model Payment {
-  id        String        @id @default(uuid()) @db.Uuid
+  id        String        @id @default(uuid())
   amount    Float
   month     Int
   year      Int
   dueDate   DateTime      @map("due_date")
-  
   status    PaymentStatus @default(Pending)
-  
-  memberId  String        @map("member_id") @db.Uuid
-
+  memberId  String        @map("member_id")
   member    Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 
   @@unique([memberId, month, year])
-  
   @@map("payments")
-
-enum EquipmentLoanStatusEnum {
-    Loaned
-    Returned
-    Damaged
 }
 
-
-
 model EquipmentLoan {
-    id         String         @id @default(uuid())
-    item_name  String
-    status     EquipmentLoanStatusEnum @default(Loaned)
-    loan_date  DateTime       @default(now())
-    due_date   DateTime
-    member_id  String
-    member     Member         @relation(fields: [member_id], references: [id])
+  id        String                  @id @default(uuid())
+  item_name String
+  status    EquipmentLoanStatusEnum @default(Loaned)
+  loan_date DateTime                @default(now())
+  due_date  DateTime
+  member_id String
+  member    Member                  @relation(fields: [member_id], references: [id])
 
-    @@map("equipment_loans")
+  @@map("equipment_loans")
 }
 
 model Sport {
-    id                           String  @id @default(uuid())
-    name                         String  @unique
-    description                  String
-    max_capacity                 Int
-    additional_price             Decimal @db.Decimal(10, 2)
-    requires_medical_certificate Boolean
+  id                           String  @id @default(uuid())
+  name                         String  @unique
+  description                  String
+  max_capacity                 Int
+  additional_price             Decimal @db.Decimal(10, 2)
+  requires_medical_certificate Boolean
 
-    @@map("sports")
+  @@map("sports")
 }
