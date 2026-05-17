@@ -1,5 +1,7 @@
+// packages/web/src/views/Home.tsx
+
 import { Box, SimpleGrid, Heading, Text, VStack } from "@chakra-ui/react";
-import { LuDumbbell, LuUsers } from "react-icons/lu";
+import { LuUsers, LuDumbbell, LuCreditCard } from "react-icons/lu";
 import { SectionCard } from "../components/SectionCard";
 
 export function HomeView() {
@@ -24,6 +26,7 @@ export function HomeView() {
       </VStack>
 
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap="8">
+        
         <SectionCard 
           title="Miembros"
           description="Administra el padrón de socios, sus categorías, estados de cuenta y datos personales."
@@ -38,7 +41,13 @@ export function HomeView() {
           icon={LuDumbbell}
         />
 
-        {/* Future sections can be added here following the same pattern */}
+        <SectionCard 
+          title="Pagos"
+          description="Administra el cobro de cuotas, registra transacciones manuales, emite comprobantes y controla la morosidad."
+          to="/payments"
+          icon={LuCreditCard}
+        />
+
         <Box 
           p="6" 
           bg="bg.muted/30" 

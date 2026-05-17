@@ -1,3 +1,4 @@
+
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { CreateMemberUseCase } from '../application/NewMemberUseCase.js';
 import { GetMembersUseCase } from '../application/GetMembersUseCase.js';
@@ -70,6 +71,29 @@ export class MemberController {
             return reply.status(204).send(); // No Content
         } catch (error: any) {
             return reply.status(400).send({ error: error.message });
+        }
+    }
+
+    async getByDni(
+        request: FastifyRequest<{ Params: { dni: string } }>,
+        reply: FastifyReply,
+    ) {
+        try {
+            const { dni } = request.params;
+
+            const socios = await this.getMembersUseCase.execute();
+            
+            const socioEncontrado = socios.find((s: any) => String(s.dni).trim() === String(dni).trim());
+
+            if (!socioEncontrado) {
+                return reply.status(404).send({ error: `No se encontró ningún miembro con el DNI: ${dni}` });
+            }
+
+            
+            return reply.status(200).send({ data: socioEncontrado });
+
+        } catch (error: any) {
+            return reply.status(500).send({ error: error.message || "Error interno al buscar por DNI" });
         }
     }
 }

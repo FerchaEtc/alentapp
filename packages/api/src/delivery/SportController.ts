@@ -27,28 +27,14 @@ export class SportController {
         }
     }
 
-    async update(
-        request: FastifyRequest<{ Params: { id: string }; Body: UpdateSportRequest }>,
-        reply: FastifyReply,
-    ) {
-        try {
-            const { id } = request.params;
-            if (!this.updateSportUseCase) {
-                throw new Error('UpdateSportUseCase no configurado');
-            }
-            const sport = await this.updateSportUseCase.execute(id, request.body);
-            return reply.status(200).send({ data: sport });
-        } catch (error: any) {
-            if (error.message.includes('El deporte no existe')) {
-                return reply.status(404).send({ error: error.message });
-            }
-            if (
-                error.message.includes('La capacidad debe ser mayor a cero') ||
-                error.message.includes('El nombre del deporte no puede modificarse')
-            ) {
-                return reply.status(400).send({ error: error.message });
-            }
-            return reply.status(500).send({ error: 'Error interno, reintente más tarde' });
-        }
+
+    async update(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      return reply.status(200).send({ msg: "Edición de deporte no implementada aún" });
+    } catch (error: any) {
+      return reply.status(500).send({ error: error.message });
     }
+  }
+
+    
 }

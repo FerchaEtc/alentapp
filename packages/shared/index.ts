@@ -8,7 +8,7 @@ export * from './types/equipment-loan.js';
 // ==========================================
 export type MemberCategory = 'Pleno' | 'Cadete' | 'Honorario';
 export type MemberStatus = 'Activo' | 'Moroso' | 'Suspendido';
-
+export * from './payment.type.js';
 export interface MemberDTO {
   id: string; // UUID
   dni: string;
