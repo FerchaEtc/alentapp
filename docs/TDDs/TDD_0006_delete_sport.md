@@ -20,7 +20,6 @@ Permitir al área administrativa eliminar un deporte del sistema cuando ya no se
 ### Criterios de Aceptación
 
 *   El sistema debe validar que el deporte exista antes de eliminarlo.
-*   El sistema debe impedir la eliminación si existen inscripciones asociadas.
 *   El sistema debe eliminar el deporte de forma física si no tiene dependencias.
 *   El sistema debe responder sin contenido cuando la eliminación sea exitosa.
 
@@ -34,8 +33,6 @@ Permitir al área administrativa eliminar un deporte del sistema cuando ya no se
 - `max_capacity`: Entero positivo mayor a cero.
 - `additional_price`: Número decimal.
 - `requires_medical_certificate`: Booleano.
-
-Para evitar inconsistencias, no se permite eliminar un deporte con inscripciones asociadas.
 
 ### Contrato de API (@alentapp/shared)
 
@@ -56,7 +53,6 @@ En `@alentapp/shared` se definirá el contrato mínimo necesario para que backen
 | Escenario                           | Resultado Esperado                                                     | Código HTTP               |
 | ------------------------------------| -----------------------------------------------------------------------| ------------------------- |
 | Deporte inexistente                 | Mensaje: "El deporte no existe"                                        | 404 Not Found             |
-| Deporte con inscripciones asociadas | Mensaje: "No se puede eliminar un deporte con inscripciones asociadas" | 409 Conflict              |
 | Error de conexion a DB              | Mensaje: "Error interno, reintente más tarde"                          | 500 Internal Server Error |
 | Eliminación exitosa                 | Respuesta vacía                                                        | 204 No Content            |
 
