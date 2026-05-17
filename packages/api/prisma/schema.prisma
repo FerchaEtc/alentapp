@@ -21,7 +21,6 @@ enum MemberStatus {
   Suspendido
 }
 
-<<<<<<< HEAD
 enum PaymentStatus {
   Pending
   Paid
@@ -64,7 +63,7 @@ model Payment {
   @@unique([memberId, month, year])
   
   @@map("payments")
-=======
+
 enum EquipmentLoanStatusEnum {
     Loaned
     Returned
@@ -84,7 +83,6 @@ model Member {
     equipment_loans EquipmentLoan[]
 
     @@map("members") // Para que en la DB la tabla se llame 'members' en minúscula
->>>>>>> 62c409102443ef9aa5ceb24f821f9c13bee12ac5
 }
 
 model EquipmentLoan {
