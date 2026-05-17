@@ -40,6 +40,11 @@ export interface UpdateMemberRequest {
 // ==========================================
 // Sport
 // ==========================================
+export const SPORT_ENDPOINTS = {
+  base: '/api/v1/sports',
+  byId: (id: string) => `/api/v1/sports/${id}`,
+} as const;
+
 export interface SportDTO {
   id: string; // UUID
   name: string;
