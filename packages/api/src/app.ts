@@ -15,6 +15,8 @@ import { PostgresPaymentRepository } from './infrastructure/PostgresPaymentRepos
 import { NewPaymentUseCase } from './application/NewPaymentUseCase.js';
 import { GetPaymentUseCase } from './application/GetPaymentUseCase.js';
 import { PaymentController } from './delivery/PaymentController.js'; 
+import { UpdatePaymentUseCase } from './application/UpdatePaymentUseCase.js';
+
 
 // --- IMPORTS DE DEPORTES (SPORTS) ---
 import { PostgresSportRepository } from './infrastructure/PostgresSportRepository.js';
@@ -46,7 +48,7 @@ export function buildApp() {
 
     server.register(cors, {
         origin: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
     });
@@ -79,7 +81,8 @@ export function buildApp() {
     const paymentRepo = new PostgresPaymentRepository();
     const newPaymentUseCase = new NewPaymentUseCase(paymentRepo);
     const getPaymentUseCase = new GetPaymentUseCase(paymentRepo); 
-    const paymentController = new PaymentController(newPaymentUseCase, getPaymentUseCase);
+    const updatePaymentUseCase = new UpdatePaymentUseCase(paymentRepo);
+    const paymentController = new PaymentController(newPaymentUseCase,getPaymentUseCase,updatePaymentUseCase );
 
     // --- INSTANCIACIÓN DE EQUIPMENT LOANS ---
     const equipmentLoanRepo = new PostgresEquipmentLoanRepository();
@@ -98,6 +101,7 @@ export function buildApp() {
     // --- ENDPOINTS DE PAGOS ---    
     server.post('/api/v1/payments', paymentController.create.bind(paymentController));
     server.get('/api/v1/payments/member/:memberId', paymentController.getByMember.bind(paymentController));
+    server.patch('/api/v1/payments/:id', paymentController.update.bind(paymentController));
 
     // --- Equipment Loan Route ---
     server.post('/api/v1/equipment-loans', equipmentLoanController.create.bind(equipmentLoanController));

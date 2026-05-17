@@ -11,13 +11,12 @@ import {
   Alert,
   Table,
   Separator,
-  Badge,
   HStack
 } from "@chakra-ui/react";
 import { LuCheck, LuX, LuReceipt, LuSearch } from "react-icons/lu";
 import { membersService } from "../services/members";
-import { getPaymentsByMember } from "../services/Payment"; 
 import { type Payment } from "@alentapp/shared";
+import { getPaymentsByMember, updatePaymentStatus } from "../services/Payment";
 
 export function PaymentsView() {
   const [searchDni, setSearchDni] = useState("");
@@ -53,7 +52,7 @@ export function PaymentsView() {
       if (!socioEncontrado) {
         setHistory([]);
         setSelectedMemberName(null);
-        searchError ? setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`) : setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`);
+        setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`);
         return;
       }
 
@@ -133,6 +132,21 @@ export function PaymentsView() {
     }
   };
 
+  
+  const handleStatusChange = async (paymentId: string, newStatus: 'Pending' | 'Paid' | 'Canceled') => {
+    try {
+      await updatePaymentStatus(paymentId, newStatus);
+      
+      const socios = await membersService.getAll();
+      const socioEncontrado = socios.find((s: any) => String(s.dni).trim() === searchDni.trim());
+      if (socioEncontrado) {
+        await refreshHistory(socioEncontrado.id);
+      }
+    } catch (err: any) {
+      alert(err.message || "No se pudo actualizar el estado del cobro.");
+    }
+  };
+
   return (
     <Box p="8" maxW="3xl" mx="auto" bg="bg.panel" borderRadius="3xl" borderWidth="1px" borderColor="border.subtle" mt="6">
       
@@ -178,7 +192,6 @@ export function PaymentsView() {
           </VStack>
         </form>
 
-      
         {searchError && (
           <Text color="red.600" fontSize="sm" mt="3" fontWeight="medium" display="flex" alignItems="center" gap="1">
             <LuX /> {searchError}
@@ -196,7 +209,6 @@ export function PaymentsView() {
 
           {history.length === 0 ? (
             <Text p="4" bg="white" borderRadius="xl" fontSize="sm" color="gray.500" fontStyle="italic" borderWidth="1px" borderColor="gray.100">
-              Este socio no registra ningún pago previo en el sistema.
             </Text>
           ) : (
             <Box borderWidth="1px" borderColor="border.subtle" borderRadius="xl" overflow="hidden" bg="white">
@@ -220,14 +232,29 @@ export function PaymentsView() {
                         {p.dueDate ? new Date(p.dueDate).toLocaleDateString("es-AR", { timeZone: "UTC" }) : "-"}
                       </Table.Cell>
                       <Table.Cell textAlign="right">
-                        <Badge 
-                          colorScheme={p.status === "Paid" ? "green" : "orange"} 
-                          variant="solid"
-                          borderRadius="md"
-                          px="2"
+                        <select
+                          value={p.status}
+                          onChange={(e) => handleStatusChange(p.id, e.target.value as any)}
+                          style={{
+                            backgroundColor: 
+                              p.status === "Paid" ? "#22c55e" : 
+                              p.status === "Canceled" ? "#ef4444" : "#f97316",
+                            color: "white",
+                            fontWeight: "bold",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            fontSize: "0.75rem",
+                            border: "none",
+                            cursor: "pointer",
+                            outline: "none",
+                            textAlign: "center",
+                            fontFamily: "inherit"
+                          }}
                         >
-                          {p.status === "Paid" ? "Pagado" : "Pendiente"}
-                        </Badge>
+                          <option value="Pending" style={{ backgroundColor: "#white", color: "black" }}>Pendiente</option>
+                          <option value="Paid" style={{ backgroundColor: "#white", color: "black" }}>Pagado</option>
+                          <option value="Canceled" style={{ backgroundColor: "#white", color: "black" }}>Cancelado</option>
+                        </select>
                       </Table.Cell>
                     </Table.Row>
                   ))}
@@ -240,7 +267,6 @@ export function PaymentsView() {
 
       <Separator mb="8" />
 
-      
       <Heading size="md" mb="4" color="gray.700">Registrar Nuevo Cobro</Heading>
 
       <VStack gap="4" width="100%" mb="6" align="stretch">
