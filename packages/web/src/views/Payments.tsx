@@ -20,14 +20,12 @@ import { getPaymentsByMember } from "../services/Payment";
 import { type Payment } from "@alentapp/shared";
 
 export function PaymentsView() {
-  // ─── ESTADO DEL BUSCADOR INDEPENDIENTE ───────────────────────────────────
   const [searchDni, setSearchDni] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [history, setHistory] = useState<Payment[]>([]);
   const [selectedMemberName, setSelectedMemberName] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // ─── ESTADOS DEL FORMULARIO DE ALTA ──────────────────────────────────────
   const [memberDni, setMemberDni] = useState("");
   const [amount, setAmount] = useState("");
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -35,11 +33,9 @@ export function PaymentsView() {
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Estados para los carteles de feedback (Carga de pagos)
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Estado de error específico para la búsqueda por DNI
   const [searchError, setSearchError] = useState<string | null>(null);
 
   const handleSearchPayments = async (e: React.FormEvent) => {
@@ -57,11 +53,10 @@ export function PaymentsView() {
       if (!socioEncontrado) {
         setHistory([]);
         setSelectedMemberName(null);
-        setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`);
+        searchError ? setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`) : setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`);
         return;
       }
 
-      
       setSelectedMemberName(socioEncontrado.name);
       const pagos = await getPaymentsByMember(socioEncontrado.id);
       setHistory(pagos);
@@ -83,6 +78,8 @@ export function PaymentsView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!memberDni.trim()) return;
+
     setLoading(true);
     setSuccessMessage(null);
     setErrorMessage(null);
@@ -104,12 +101,12 @@ export function PaymentsView() {
       };
 
       const paymentResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/payments`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify(paymentData),
-});
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+      });
 
       const paymentResult = await paymentResponse.json();
 
@@ -124,10 +121,10 @@ export function PaymentsView() {
       }
 
       setMemberDni("");
-setAmount("");
-setDueDate("");
-setMonth(new Date().getMonth() + 1); 
-setYear(new Date().getFullYear());
+      setAmount("");
+      setDueDate("");
+      setMonth(new Date().getMonth() + 1); 
+      setYear(new Date().getFullYear());
 
     } catch (error: any) {
       setErrorMessage(error.message || "No se pudo conectar con el servidor.");
@@ -148,7 +145,6 @@ setYear(new Date().getFullYear());
         </Text>
       </VStack>
 
-      {/*SECCIÓN DE BÚSQUEDA EXPLICÍTA POR DNI */}
       <Box p="5" bg="gray.50" borderRadius="2xl" borderWidth="1px" borderColor="gray.100" mb="8">
         <form onSubmit={handleSearchPayments}>
           <VStack align="stretch" gap="3">
@@ -158,7 +154,11 @@ setYear(new Date().getFullYear());
                 <Input 
                   placeholder="Ingresá DNI para buscar pagos..." 
                   value={searchDni}
-                  onChange={(e) => setSearchDni(e.target.value)}
+                  maxLength={8}
+                  onChange={(e) => {
+                    const soloNumeros = e.target.value.replace(/[^0-9]/g, '');
+                    setSearchDni(soloNumeros);
+                  }}
                   bg="white"
                   borderRadius="xl"
                   size="lg"
@@ -178,7 +178,7 @@ setYear(new Date().getFullYear());
           </VStack>
         </form>
 
-        {/* Error de búsqueda */}
+      
         {searchError && (
           <Text color="red.600" fontSize="sm" mt="3" fontWeight="medium" display="flex" alignItems="center" gap="1">
             <LuX /> {searchError}
@@ -186,7 +186,6 @@ setYear(new Date().getFullYear());
         )}
       </Box>
 
-      {/* ─── TABLA DE RESULTADOS DE BÚSQUEDA ─────────────────────────────────── */}
       {hasSearched && selectedMemberName && (
         <Box mb="8" p="4" borderWidth="1px" borderColor="blue.100" bg="blue.50/20" borderRadius="2xl">
           <VStack align="flex-start" mb="4" gap="1">
@@ -241,7 +240,7 @@ setYear(new Date().getFullYear());
 
       <Separator mb="8" />
 
-      {/* ─── SECCIÓN 2: FORMULARIO ORIGINAL DE CARGA ─────────────────────────── */}
+      
       <Heading size="md" mb="4" color="gray.700">Registrar Nuevo Cobro</Heading>
 
       <VStack gap="4" width="100%" mb="6" align="stretch">
@@ -274,7 +273,11 @@ setYear(new Date().getFullYear());
             <Input 
               placeholder="Ej: 37824282" 
               value={memberDni}
-              onChange={(e) => setMemberDni(e.target.value)}
+              maxLength={8}
+              onChange={(e) => {
+                const soloNumeros = e.target.value.replace(/[^0-9]/g, '');
+                setMemberDni(soloNumeros);
+              }}
               size="lg"
               borderRadius="xl"
             />
