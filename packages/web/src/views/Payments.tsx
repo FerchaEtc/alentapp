@@ -16,8 +16,8 @@ import {
 } from "@chakra-ui/react";
 import { LuCheck, LuX, LuReceipt, LuSearch } from "react-icons/lu";
 import { membersService } from "../services/members";
-import { getPaymentsByMember } from "../services/Payment"; 
 import { type Payment } from "@alentapp/shared";
+import { getPaymentsByMember, updatePaymentStatus } from "../services/Payment";
 
 export function PaymentsView() {
   const [searchDni, setSearchDni] = useState("");
@@ -53,7 +53,7 @@ export function PaymentsView() {
       if (!socioEncontrado) {
         setHistory([]);
         setSelectedMemberName(null);
-        searchError ? setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`) : setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`);
+        setSearchError(`No se encontró ningún socio con el DNI: ${searchDni}`);
         return;
       }
 
@@ -133,6 +133,31 @@ export function PaymentsView() {
     }
   };
 
+  const handleToggleStatus = async (paymentId: string, currentStatus: string) => {
+    try {
+      let nextStatus: 'Pending' | 'Paid' | 'Canceled' = 'Pending';
+
+      // Definimos la rotación: Pendiente -> Pagado -> Cancelado -> Pendiente
+      if (currentStatus === "Pending") {
+        nextStatus = "Paid";
+      } else if (currentStatus === "Paid") {
+        nextStatus = "Canceled";
+      } else if (currentStatus === "Canceled") {
+        nextStatus = "Pending";
+      }
+      
+      await updatePaymentStatus(paymentId, nextStatus);
+      
+      const socios = await membersService.getAll();
+      const socioEncontrado = socios.find((s: any) => String(s.dni).trim() === searchDni.trim());
+      if (socioEncontrado) {
+        await refreshHistory(socioEncontrado.id);
+      }
+    } catch (err: any) {
+      alert(err.message || "No se pudo actualizar el estado del cobro.");
+    }
+  };
+
   return (
     <Box p="8" maxW="3xl" mx="auto" bg="bg.panel" borderRadius="3xl" borderWidth="1px" borderColor="border.subtle" mt="6">
       
@@ -178,7 +203,6 @@ export function PaymentsView() {
           </VStack>
         </form>
 
-      
         {searchError && (
           <Text color="red.600" fontSize="sm" mt="3" fontWeight="medium" display="flex" alignItems="center" gap="1">
             <LuX /> {searchError}
@@ -220,11 +244,24 @@ export function PaymentsView() {
                         {p.dueDate ? new Date(p.dueDate).toLocaleDateString("es-AR", { timeZone: "UTC" }) : "-"}
                       </Table.Cell>
                       <Table.Cell textAlign="right">
+                        
                         <Badge 
+                          as="button"
+                          onClick={() => handleToggleStatus(p.id, p.status)}
                           colorScheme={p.status === "Paid" ? "green" : "orange"} 
                           variant="solid"
                           borderRadius="md"
-                          px="2"
+                          px="3"
+                          py="1"
+                          cursor="pointer"
+                          fontWeight="bold"
+                          _hover={{
+                            transform: "scale(1.05)",
+                            opacity: 0.9
+                          }}
+                          _active={{
+                            transform: "scale(0.95)"
+                          }}
                         >
                           {p.status === "Paid" ? "Pagado" : "Pendiente"}
                         </Badge>
@@ -240,7 +277,6 @@ export function PaymentsView() {
 
       <Separator mb="8" />
 
-      
       <Heading size="md" mb="4" color="gray.700">Registrar Nuevo Cobro</Heading>
 
       <VStack gap="4" width="100%" mb="6" align="stretch">
