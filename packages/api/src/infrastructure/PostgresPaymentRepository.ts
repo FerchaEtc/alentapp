@@ -1,6 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/client/client.js';
-import { PaymentRepository } from '../application/NewPaymentUseCase.js';
+import { PaymentRepository } from '../domain/PaymentRepository.js'; 
 import { Payment } from '@alentapp/shared';
 
 if (!process.env.DATABASE_URL) {
@@ -67,12 +67,30 @@ export class PostgresPaymentRepository implements PaymentRepository {
       month: p.month,
       year: p.year,
       status: p.status,
-      
       dueDate: p.dueDate,
       due_date: p.dueDate || p.due_date,
-      
       createdAt: p.createdAt || p.created_at,
       created_at: p.createdAt || p.created_at
     })) as any;
   }
-} 
+
+  public async findById(id: string): Promise<any | null> {
+    const payment = await prisma.payment.findUnique({
+      where: { id }
+    });
+    return payment;
+  }
+
+  public async update(id: string, data: { amount: number; status: string; dueDate: Date }): Promise<any> {
+    const updatedPayment = await prisma.payment.update({
+      where: { id },
+      data: {
+        amount: data.amount,
+        status: data.status as any,
+        dueDate: data.dueDate
+      }
+    });
+    return updatedPayment;
+  }
+  
+}
