@@ -8,24 +8,23 @@
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('Pending', 'Paid', 'Canceled');
 
--- AlterTable
-ALTER TABLE "members" DROP CONSTRAINT "members_pkey",
-DROP COLUMN "id",
-ADD COLUMN     "id" UUID NOT NULL,
-ADD CONSTRAINT "members_pkey" PRIMARY KEY ("id");
+
 
 -- CreateTable
 CREATE TABLE "payments" (
-    "id" UUID NOT NULL,
+    "id" TEXT NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
     "month" INTEGER NOT NULL,
     "year" INTEGER NOT NULL,
     "due_date" TIMESTAMP(3) NOT NULL,
     "status" "PaymentStatus" NOT NULL DEFAULT 'Pending',
-    "member_id" UUID NOT NULL,
+    "member_id" TEXT NOT NULL,
+
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,   
 
     CONSTRAINT "payments_pkey" PRIMARY KEY ("id")
 );
+                                                                                                                      
 
 -- CreateIndex
 CREATE UNIQUE INDEX "payments_member_id_month_year_key" ON "payments"("member_id", "month", "year");
