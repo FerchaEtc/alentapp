@@ -4,8 +4,10 @@ import { createBrowserRouter } from "react-router";
 import { MembersView } from "./views/Members";
 import { HomeView } from "./views/Home";
 import { SportsView } from "./views/Sports";
-import Layout from "./Layout";
 import { PaymentsView } from "./views/Payments"; 
+import { EquipmentLoansView } from "./views/EquipmentLoans";
+import Layout from "./Layout";
+
 
 export let router = createBrowserRouter([
   {
@@ -19,16 +21,19 @@ export let router = createBrowserRouter([
         path: "/members",
         Component: MembersView,
       },
+      {
+          path: '/payments',
+          Component: PaymentsView,
+      },
 
-{
-    path: '/payments',
-    Component: PaymentsView,
-},
-
-{
-  path: "/sports",
-  Component: SportsView,
-}
+      {
+        path: "/sports",
+        Component: SportsView,
+      },
+      {
+        path: "/equipment-loans",
+        Component: EquipmentLoansView,
+      }
     ],
   },
 ]);
