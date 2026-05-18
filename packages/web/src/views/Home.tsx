@@ -48,6 +48,13 @@ export function HomeView() {
           icon={LuCreditCard}
         />
 
+        <SectionCard 
+          title="Equipos Prestados"
+          description="Administra el préstamo de equipos"
+          to="/equipment-loans"
+          icon={LuCreditCard}
+        />
+
         <Box 
           p="6" 
           bg="bg.muted/30" 
