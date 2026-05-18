@@ -15,3 +15,12 @@ export interface UpdateEquipmentLoanRequest {
   due_date?: string;                // Opcional
   member_id?: string;               // Opcional
 }
+
+export interface EquipmentLoanDTO {
+  id: string;               
+  item_name: string;
+  status: EquipmentLoanStatus;
+  loan_date: string;        
+  due_date: string;         
+  member_id: string;        
+}
