@@ -163,7 +163,7 @@ export function PaymentsView() {
         <form onSubmit={handleSearchPayments}>
           <VStack align="stretch" gap="3">
             <Field.Root required>
-              <Field.Label fontWeight="bold" color="gray.700">Consultar Historial por DNI</Field.Label>
+              <Field.Label fontWeight="bold" color="Black">Consultar Historial por DNI</Field.Label>
               <HStack width="100%">
                 <Input 
                   placeholder="Ingresá DNI para buscar pagos..." 
