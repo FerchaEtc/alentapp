@@ -68,4 +68,25 @@ describe('CreateSportUseCase', () => {
         expect(mockSportRepo.create).not.toHaveBeenCalled();
     });
 
+    it('debe lanzar error si la capacidad máxima es menor o igual a cero', async () => {
+        const sportRequest: CreateSportRequest = {
+            name: 'Tenis',
+            description: 'Polvo de ladrillo',
+            max_capacity: 0,
+            additional_price: 0,
+            requires_medical_certificate: false,
+        };
+
+        vi.mocked(mockSportValidator.validateMaxCapacity).mockImplementationOnce(() => {
+            throw new Error('La capacidad debe ser mayor a cero');
+        });
+
+        await expect(useCase.execute(sportRequest)).rejects.toThrow(
+            'La capacidad debe ser mayor a cero',
+        );
+
+        expect(mockSportValidator.validateMaxCapacity).toHaveBeenCalledWith(0);
+        expect(mockSportValidator.validateNameIsUnique).not.toHaveBeenCalled();
+        expect(mockSportRepo.create).not.toHaveBeenCalled();
+    });
 });
