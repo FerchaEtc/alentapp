@@ -20,5 +20,10 @@ describe('DeleteSportUseCase', () => {
         expect(mockSportRepo.delete).not.toHaveBeenCalled();
         expect(mockSportRepo.findById).toHaveBeenCalledWith('uuid-999');
     });
-    
+
+    it('debe eliminar un deporte si existe', async () => {
+        vi.mocked(mockSportRepo.findById).mockResolvedValueOnce({ id: 'uuid-1'} as any);
+        await useCase.execute('uuid-1');
+        expect(mockSportRepo.delete).toHaveBeenCalledWith('uuid-1');
+    });
 })
