@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, expectTypeOf } from "vitest";
 import { UpdateSportUseCase } from "./UpdateSportUseCase.js";
 import { SportRepository } from "../domain/SportRepository.js";
 import { SportValidator } from "../domain/services/SportValidator.js";
@@ -63,6 +63,21 @@ describe('UpdateSportUseCase', () => {
         expect(mockSportRepo.findById).toHaveBeenCalledWith(sportId);
         expect(mockSportValidator.validateNameCannotBeModified).not.toHaveBeenCalled();
         expect(mockSportValidator.validateMaxCapacity).not.toHaveBeenCalled();
-        expect(mockSportRepo.update).not.toHaveBeenCalled();                                                                                                                                                                         
-   });  
+        expect(mockSportRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('debe lanzar error si se intenta modificar name', async () => {
+        const sportId = '550e8400-e29b-41d4-a716-446655440000';
+        const updateData = {name: 'Tenis'} as unknown as UpdateSportRequest;
+
+        vi.mocked(mockSportValidator.validateNameCannotBeModified).mockImplementationOnce(() => {
+            throw new Error ('El nombre del deporte no puede modificarse');
+        });
+
+        await expect(useCase.execute(sportId, updateData)).rejects.toThrow('El nombre del deporte no puede modificarse');
+        expect(mockSportRepo.findById).toHaveBeenCalledWith(sportId);
+        expect(mockSportValidator.validateNameCannotBeModified).toHaveBeenCalledWith(updateData);
+        expect(mockSportValidator.validateMaxCapacity).not.toHaveBeenCalled();
+        expect(mockSportRepo.update).not.toHaveBeenCalled();
+    });
 })
