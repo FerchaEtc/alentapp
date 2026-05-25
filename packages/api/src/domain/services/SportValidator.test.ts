@@ -22,8 +22,19 @@ describe('SportValidator', () => {
         it('debe lanzar un error si la capacidad máxima es menor o igual a cero', () => {
             expect(() => validator.validateMaxCapacity(0)).toThrow('La capacidad debe ser mayor a cero');
             expect(() => validator.validateMaxCapacity(-1)).toThrow('La capacidad debe ser mayor a cero');
-        })
-    })
+        });
+    });
+
+    describe('validateNameCannotBeModified', () => {
+        it('debe pasar correctamente si no se intenta modificar el nombre', () => {
+            expect(() => validator.validateNameCannotBeModified({description: 'nueva descripción', max_capacity: 20})).not.toThrow();
+            expect(() => validator.validateNameCannotBeModified({})).not.toThrow();
+        });
+
+        it('debe lanzar error si se intenta modificar el nombre', () => {
+            expect(() => validator.validateNameCannotBeModified({name: 'Tenis'})).toThrow('El nombre no puede ser modificado');
+        });
+    });
 });
 
 
