@@ -46,4 +46,26 @@ describe('CreateSportUseCase', () => {
         expect(mockSportRepo.create).toHaveBeenCalledWith(sportRequest);
     });
 
+    it('debe lanzar error si ya existe un deporte con ese nombre', async () => {
+        const sportRequest: CreateSportRequest = {
+            name: 'Tenis',
+            description: 'Polvo de ladrillo',
+            max_capacity: 100,
+            additional_price: 0,
+            requires_medical_certificate: false,
+        };
+
+        vi.mocked(mockSportValidator.validateNameIsUnique).mockRejectedValueOnce(
+            new Error('Ya existe un deporte con ese nombre'),
+        );
+
+        await expect(useCase.execute(sportRequest)).rejects.toThrow(
+            'Ya existe un deporte con ese nombre',
+        );
+
+        expect(mockSportValidator.validateMaxCapacity).toHaveBeenCalledWith(100);
+        expect(mockSportValidator.validateNameIsUnique).toHaveBeenCalledWith('Tenis');
+        expect(mockSportRepo.create).not.toHaveBeenCalled();
+    });
+
 });
