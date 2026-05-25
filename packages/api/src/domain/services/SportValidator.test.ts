@@ -32,7 +32,21 @@ describe('SportValidator', () => {
         });
 
         it('debe lanzar error si se intenta modificar el nombre', () => {
-            expect(() => validator.validateNameCannotBeModified({name: 'Tenis'})).toThrow('El nombre no puede ser modificado');
+            expect(() => validator.validateNameCannotBeModified({name: 'Tenis'})).toThrow('El nombre del deporte no puede modificarse');
+        });
+    });
+
+    describe('validateNameIsUnique', () => {
+        it('debe pasar no existe un deporte con ese nombre', async () => {
+            vi.mocked(mockSportRepo.findByName).mockResolvedValueOnce(null);
+            await expect(validator.validateNameIsUnique('Tenis')).resolves.not.toThrow();
+            expect(mockSportRepo.findByName).toHaveBeenCalledWith('Tenis');
+        });
+
+        it('debe lanzar error si ya existe un deporte con ese nombre', async () => {
+            vi.mocked(mockSportRepo.findByName).mockResolvedValueOnce({id: 'sport-1', name: 'Tenis', description: 'Polvo de ladrillo', max_capacity: 100, additional_price: 0, requires_medical_certificate: false});
+            await expect(validator.validateNameIsUnique('Tenis')).rejects.toThrow('Ya existe un deporte con ese nombre');
+            expect(mockSportRepo.findByName).toHaveBeenCalledWith('Tenis');
         });
     });
 });
