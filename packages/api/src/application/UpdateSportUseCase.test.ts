@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UpdateSportUseCase } from "./UpdateSportUseCase.js";
 import { SportRepository } from "../domain/SportRepository.js";
 import { SportValidator } from "../domain/services/SportValidator.js";
-import { UpdateSportRequest, SportDTO } from "@alentapp/shared";
+import { UpdateSportRequest } from "@alentapp/shared";
 
 describe('UpdateSportUseCase', () => {
     const mockSportRepo = {
@@ -18,18 +18,8 @@ describe('UpdateSportUseCase', () => {
 
     const useCase = new UpdateSportUseCase(mockSportRepo, mockSportValidator);
 
-    const mockExistingSport: SportDTO = {
-        id: 'uuid-1',
-        name: 'Tenis',
-        description: 'Polvo de ladrillo',
-        max_capacity: 10,
-        additional_price: 100,
-        requires_medical_certificate: true,
-    };
-
     beforeEach(() => {
-        vi.clearAllMocks();
-        vi.mocked(mockSportRepo.findById).mockResolvedValueOnce(mockExistingSport);
+        vi.resetAllMocks();
     });
     
     it('debe actualizar description y max_capacity correctamente', async () => {
@@ -60,4 +50,19 @@ describe('UpdateSportUseCase', () => {
         expect(mockSportValidator.validateMaxCapacity).toHaveBeenCalledWith(100);
         expect(mockSportRepo.update).toHaveBeenCalledWith(sportId, updateData);
     });
+    
+    it('debe lanzar error si el deporte no existe', async () => {
+        const sportId = '550e8400-e29b-41d4-a716-446655440000';
+        const updateData: UpdateSportRequest = {
+            description: 'test',
+            max_capacity: 100,
+        };
+        
+        vi.mocked(mockSportRepo.findById).mockResolvedValueOnce(null);
+        await expect(useCase.execute(sportId, updateData)).rejects.toThrow('El deporte no existe');
+        expect(mockSportRepo.findById).toHaveBeenCalledWith(sportId);
+        expect(mockSportValidator.validateNameCannotBeModified).not.toHaveBeenCalled();
+        expect(mockSportValidator.validateMaxCapacity).not.toHaveBeenCalled();
+        expect(mockSportRepo.update).not.toHaveBeenCalled();                                                                                                                                                                         
+   });  
 })
