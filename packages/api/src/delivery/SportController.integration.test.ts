@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
-import { SportDTO } from '@alentapp/shared';
+import { CreateSportRequest, SportDTO } from '@alentapp/shared';
 
-// Mockeamos el repositorio para que la API entera funcione sin conectarse a la Base de Datos real
-// Esto nos permite testear la integración del ciclo completo: Fastify -> Controller -> UseCase -> Validator
 vi.mock('../infrastructure/PostgresSportRepository.js', () => {
     const existingSport: SportDTO = {
         id: '1',
@@ -18,8 +16,15 @@ vi.mock('../infrastructure/PostgresSportRepository.js', () => {
     return {
         PostgresSportRepository: class {
             async findAll() { return [existingSport]; }
+            async findByName(_name: string) { return null; }
+            async create(data: CreateSportRequest) { return { id: '2', ...data }; }
         }
     };
+});
+
+vi.hoisted(() => {
+    process.env.DATABASE_URL ??= 'postgresql://admin:password123@localhost:5432/alentapp_test_db';
+    process.env.NODE_ENV = 'test';
 });
 
 describe('Sport API Integration Tests', () => {
@@ -46,6 +51,29 @@ describe('Sport API Integration Tests', () => {
             expect(body.data).toBeInstanceOf(Array);
             expect(body.data[0].id).toBe('1');
             expect(body.data[0].name).toBe('Tenis');
+        });
+    });
+
+    describe('POST /api/v1/sports', () => {
+        it('debe retornar 201 y crear el deporte', async () => {
+            const payload: CreateSportRequest = {
+                name: 'Natación',
+                description: 'Pileta climatizada',
+                max_capacity: 25,
+                additional_price: 300,
+                requires_medical_certificate: true,
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/sports',
+                payload
+            });
+
+            expect(response.statusCode).toBe(201);
+            const body = JSON.parse(response.payload);
+            expect(body.data.name).toBe('Natación');
+            expect(body.data.id).toBeDefined();
         });
     });
 });
