@@ -70,8 +70,12 @@ describe('UpdateSportUseCase', () => {
         const sportId = '550e8400-e29b-41d4-a716-446655440000';
         const updateData = {name: 'Tenis'} as unknown as UpdateSportRequest;
 
+        vi.mocked(mockSportRepo.findById).mockResolvedValueOnce({
+            id: sportId, name: 'Futbol', description: 'descripción', max_capacity: 50, additional_price: 0, requires_medical_certificate: false
+        });
+
         vi.mocked(mockSportValidator.validateNameCannotBeModified).mockImplementationOnce(() => {
-            throw new Error ('El nombre del deporte no puede modificarse');
+            throw new Error('El nombre del deporte no puede modificarse');
         });
 
         await expect(useCase.execute(sportId, updateData)).rejects.toThrow('El nombre del deporte no puede modificarse');
