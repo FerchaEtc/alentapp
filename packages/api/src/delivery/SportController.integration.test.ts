@@ -20,6 +20,7 @@ vi.mock('../infrastructure/PostgresSportRepository.js', () => {
             async findById(id: string) { return id === existingSport.id ? existingSport : null; }
             async create(data: CreateSportRequest) { return { id: '2', ...data }; }
             async update(id: string, data: UpdateSportRequest) { return { ...existingSport, ...data, id }; }
+            async delete(_id: string) { return; }
         }
     };
 });
@@ -140,4 +141,18 @@ describe('Sport API Integration Tests', () => {
             expect(body.data.max_capacity).toBe(30);
         });
     });
+
+    describe('DELETE /api/v1/sports/:id', () => {
+        it('debe retornar 204 si se elimina correctamente', async () => {
+            const response = await app.inject({
+                method: 'DELETE',
+                url: '/api/v1/sports/1'
+            });
+
+            expect(response.statusCode).toBe(204);
+            expect(response.payload).toBe('');
+        });
+    });
+
+
 });
