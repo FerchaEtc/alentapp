@@ -1,177 +1,93 @@
-**Estado:** Propuesto
-**Autor:** Nahuel Iróz
-**Fecha:** 2026-05-03
+---
+id: 0007
+estado: Propuesto
+autor: Nahuel Iróz
+fecha: 2026-04-20
+titulo: Registro de Nuevos Pagos
+---
 
+# TDD-0007: Registro de Nuevos Pagos
 
+## Contexto de Negocio (PRD)
 
-*** 1. Contexto de Negocio (El "Qué")***
+### Objetivo
 
-/*1.1. Objetivo*/
+Permitir la generación de una nueva obligación financiera (cuota) asociada a un socio del club para iniciar su ciclo financiero, llevar el control de deudas y servir de base para posteriores acciones (pago, vencimiento o cancelación), garantizando la integridad de los datos y evitando duplicaciones.
 
-El objetivo de este caso de uso es permitir la generación de una nueva obligación financiera (cuota) asociada a un socio del club.
+### User Persona
 
-Este proceso es fundamental porque:
+- Nombre: Alberto (Tesorero/Administrativo).
+- Necesidad: Generar cuotas mensuales de forma masiva o individual asegurando que no se dupliquen los periodos de pago y manteniendo la confiabilidad en los datos financieros.
 
-1 Representa el inicio del ciclo financiero de una cuota
-2 Permite llevar control de deudas
-3 Es la base para posteriores acciones (pago, vencimiento, cancelación)
+### Criterios de Aceptación
 
-El sistema debe garantizar:
+- El sistema debe validar que no exista una cuota registrada para el mismo socio, mes y año.
+- El sistema debe validar que el monto sea mayor a cero y que el mes se encuentre en el rango válido (1-12).
+- Al finalizar, el sistema debe crear la cuota con estado PENDING por defecto, registrando la fecha de creación y dejando la fecha de pago vacía.
 
-1 Integridad de datos
-2 No duplicación de cuotas para un mismo período
-3 Inicialización correcta del estado
+## Diseño Técnico (RFC)
 
-/*1.2. User Personas*/
+### Modelo de Datos
 
-**Tesorero**
+Se definirá la entidad `Payment` con las siguientes propiedades y restricciones:
+- id: Identificador único universal (UUID).
+- memberId: Cadena de texto (ID del socio asociado).
+- amount: Valor numérico (Monto de la cuota, mayor a 0).
+- month: Valor entero (Mes del período, de 1 a 12).
+- year: Valor entero (Año del período).
+- dueDate: Fecha de vencimiento.
+- status: Enumeración (PENDING, PAID, OVERDUE, CANCELED) con valor por defecto PENDING.
+- paymentDate: Fecha de pago (Opcional).
+- createdAt: Fecha de creación autogenerada.
 
-1 Responsable de generar cuotas mensuales
-2 Necesita asegurar que no se dupliquen pagos
-3 Busca confiabilidad en los datos financieros
+### Contrato de API (@alentapp/shared)
 
+Definiremos los tipos en el paquete compartido para asegurar sincronización:
 
-*** 1.3. Criterios de Aceptación (User Stories)***
+- Endpoint: POST /api/v1/payments
+- Request Body (CreatePaymentRequest)
 
-**User Story:**
-Yo como tesorero quiero generar una cuota para un socio para registrar su obligación de pago.
-
-Escenario de éxito
-
-1 Dado un socio válido
-2 Cuando ingreso datos correctos
-3 Entonces el sistema crea un Payment con:
-
-  * estado `PENDING`
-  * fecha de creación
-  * sin fecha de pago
-
-
-Escenarios de fallo
-
-1. **Duplicación**
-
-   * Si ya existe un Payment con:
-
-     * mismo `memberId`
-     * mismo `month`
-     * mismo `year`
-     El sistema debe rechazar la operación
-
-2. **Datos inválidos**
-
-   * Monto ≤ 0
-   * Mes fuera de rango (1–12)
-   * Fecha inválida
-
-    El sistema debe rechazar la operación
-
-/*2. Diseño Técnico (El "Cómo")*/
-
-*** 2.1. Modelo de Dominio ***
-
-export type PaymentStatus =
-  | "PENDING"
-  | "PAID"
-  | "OVERDUE"
-  | "CANCELED";
-
-export interface Payment {
-  id: string;
-  memberId: string;
-  amount: number;
-  month: number;
-  year: number;
-  dueDate: Date;
-  status: PaymentStatus;
-  paymentDate?: Date;
-  createdAt: Date;
-}
-
-
-
-/*2.2. Contrato de API*/
-
-**Endpoint:**
-`POST /api/v1/payments`
-
-**Request Body:**
-
-json:
+```ts
 {
-  "memberId": "string",
-  "amount": 10000,
-  "month": 5,
-  "year": 2026,
-  "dueDate": "2026-05-10"
+    memberId: string;
+    amount: number;
+    month: number;
+    year: number;
+    dueDate: string; // Formato ISO Date YYYY-MM-DD
 }
+```
 
-
-**Response (201 Created):**
-
-json
+```ts
 {
-  "id": "uuid",
-  "status": "PENDING"
+    id: string;
+    status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELED';
 }
-
-***2.3. Persistencia (Prisma)***
-
-
-model Payment {
-  id           String   @id @default(uuid())
-  memberId     String
-  amount       Float
-  month        Int
-  year         Int
-  dueDate      DateTime
-  status       PaymentStatus
-  paymentDate  DateTime?
-  createdAt    DateTime @default(now())
-
-  @@unique([memberId, month, year])
-}
+```
 
 
+### Componentes de Arquitectura Hexagonal
 
-/*3. Arquitectura y Flujo*/
+1. Puerto: PaymentRepository (Interface en el Dominio con métodos create y findByMemberAndPeriod).
+2. Caso de Uso: CreatePayment (Lógica que valida la estructura, reglas de negocio de montos/fechas y verifica duplicados antes de persistir).
+3. Adaptador de Salida: Prisma persistence adapter (Implementación real en BD mediante esquema relacional).
+4. Adaptador de Entrada: PaymentController (Ruta HTTP).
 
-***3.1. Repository Interface***
+## Casos de Borde y Errores
 
+| Escenario                  | Resultado Esperado                                                        | Código HTTP            |
+| -------------------------- | ---------------------------------------------| -------------------------- | ---------------------- | 
+| Cuota ya registrada        | Mensaje: "Ya existe una cuota para este socio en el período indicado"     | 400 Conflict           |
+| Datos faltantes o inválidos| Mensaje: "Campos requeridos ausentes o con formato incorrecto             | 400 Bad Request        |
+| Monto inválido ó ≤ 0       | Mensaje: "El monto de la cuota debe ser mayor a cero"                     | 400 Bad Request        |
+| Error de conexión a DB     | Mensaje: "Error interno, reintente más tarde"                             | 500 Internal Server    |
 
-export interface PaymentRepository {
-  create(payment: Payment): Promise<Payment>;
-  findByMemberAndPeriod(
-    memberId: string,
-    month: number,
-    year: number
-  ): Promise<Payment | null>;
-}
+## Plan de Implementación
 
-***3.2. Lógica del Caso de Uso***
+1. Definir esquema de persistencia en Prisma, configurar restricción única compuesta y correr migración.
+2. Crear tipos de Request/Response en shared y puerto en el Dominio.
+3. Implementar el repositorio y las validaciones en el caso de uso.
+4. Crear la interfaz de control/generación en el frontend y conectar con el endpoint del backend.
 
-1. Validar estructura del request
-2. Validar reglas de negocio:
-
-   * monto > 0
-   * mes válido
-3. Consultar repositorio:
-   * verificar duplicado
-4. Crear entidad Payment:
-   * status = PENDING
-   * createdAt = now()
-5. Persistir
-6. Retornar resultado
-
-
-***4. Casos de Borde y Errores***
-
-| Escenario       | Descripción        | HTTP |
-| --------------- | ------------------ | ---- |
-| Datos faltantes | Campos requeridos  | 400  |
-| Monto inválido  | amount ≤ 0         | 400  |
-| Duplicado       | Ya existe cuota    | 409  |
-| Error DB        | Falla persistencia | 500  |
 
 
 

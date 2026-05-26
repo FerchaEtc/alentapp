@@ -1,78 +1,63 @@
-**Estado:** Propuesto
-**Autor:** Nahuel Iróz
-**Fecha:** 2026-05-03
+---
+id: 0009
+estado: Prpuesti
+autor: Nahuel Iróz
+fecha: 2026-04-20
+titulo: Modificacion de Pagos
+---
 
+# TDD-0002: Actualización de Socios Existentes
 
+## Contexto de Negocio (PRD)
 
-/*1. Contexto de Negocio*/
+### Objetivo
 
-*** 1.1. Objetivo ***
+Permitir registrar el cobro de una cuota financiera, marcándola como pagada y asentando la fecha exacta de la transacción para reflejar que la deuda fue saldada de forma correcta y evitar inconsistencias en el flujo de caja del club.
 
-Permitir marcar una cuota como pagada.
+### User Persona
 
-*** 1.2. User Personas ***
+- Nombre: Alberto (Tesorero/Administrativo).
+- Necesidad: Registrar los pagos recibidos de los socios de manera ágil y precisa, asegurando que el estado financiero de cada miembro impacte en el sistema sin margen de error.
+### Criterios de Aceptación
 
-**Tesorero**
+- Al procesar el pago, el estado de la cuota seleccionada debe actualizarse a PAID.
+- El sistema debe guardar automáticamente la fecha actual en la propiedad paymentDate.
+- El sistema debe impedir la operación si la cuota ya fue pagada previamente o si se encuentra cancelada.
+## Diseño Técnico (RFC)
 
-* Registra pagos recibidos
-* Necesita evitar inconsistencias
+### Contrato de API (@alentapp/shared)
 
+Este caso de uso opera sobre la entidad Payment existente, modificando y completando las siguientes propiedades:
 
-*** 1.3. Criterios de Aceptación ***
+- Endpoint: `PATCH /api/v1/payments/:id/payment`
+- Request Body (UpdateMemberRequest):
 
-**User Story:**
-Yo como tesorero quiero marcar una cuota como pagada para reflejar que la deuda fue saldada.
-
-Éxito
-
-* Estado pasa a `PAID`
-* Se registra `paymentDate`
-
-Fallos
-
-* Payment inexistente
-* Ya pagado
-
-
-/*2. Diseño Técnico*/
-
-*** 2.1. API ***
-
-`PATCH /api/v1/payments/:id`
-
-json
+```ts
 {
-  "status": "PAID"
+    status: 'PAID';
 }
+```
 
-/*3. Arquitectura y Flujo*/
+### Componentes de Arquitectura Hexagonal
 
-*** 3.1. Repository ***
+1. Puerto: PaymentRepository (Interface en el Dominio que reutiliza los métodos findById y update).
+2. Caso de Uso: RecordPayment (Lógica que busca la cuota, valida su existencia, verifica que el estado actual no sea PAID ni CANCELED, y asigna las propiedades de pago antes de persistir).
+3. Adaptador de Salida: Prisma persistence adapter (Actualización del registro en la base de datos).
+4. Adaptador de Entrada: PaymentController (Ruta HTTP que captura el parámetro :id).
 
+## Casos de Borde y Errores
 
-findById(id: string): Promise<Payment | null>;
-update(payment: Payment): Promise<Payment>;
+| Escenario                  | Resultado Esperado                            | Código HTTP actual        |
+| -------------------------- | --------------------------------------------- | ------------------------- |
+| Pago inexistente           | Mensaje: "El Pago no existe"                  | 400 not found             |
+| Cuota pagada               | Mensaje: "La cuot ya se encuentra pagada  "   | 400 Bad request           |
+| Error de conexión a DB     | Mensaje: "Error interno, reintente más tarde" | 500 Internal Server Error |
 
-*** 3.2. Lógica ***
+## Plan de Implementación
 
-1. Buscar Payment
-2. Validar existencia
-3. Validar estado actual:
+1. Asegurar la disponibilidad de los tipos de Request/Response de pago en shared.
+Implementar la lógica de negocio en el caso de uso con las validaciones concurrentes de estado.
+2. Actualizar el controlador backend para exponer el endpoint de confirmación de pago.
+3. Diseñar la acción de cobro en la vista de cobros del frontend y conectarla con la API.
 
-   * no debe ser `PAID`
-   * no debe ser `CANCELED`
-4. Actualizar:
-
-   * status -> PAID
-   * paymentDate → now()
-5. Persistir
-
-/*4. Condiciones de borde*/
-
-| Escenario | HTTP |
-| --------- | ---- |
-| No existe | 404  |
-| Ya pagado | 400  |
-| Cancelado | 400  |
-| Error DB  | 500  |
 
