@@ -95,5 +95,25 @@ describe('Sport API Integration Tests', () => {
             const body = JSON.parse(response.payload);
             expect(body.error).toBe('Ya existe un deporte con ese nombre');
         });
+
+        it('debe retornar 400 si la capacidad máxima no es mayor a cero', async () => {
+            const payload: CreateSportRequest = {
+                name: 'Básquet',
+                description: 'Cancha techada',
+                max_capacity: 0,
+                additional_price: 0,
+                requires_medical_certificate: false,
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/sports',
+                payload
+            });
+
+            expect(response.statusCode).toBe(400);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('La capacidad debe ser mayor a cero');
+        });
     });
 });
