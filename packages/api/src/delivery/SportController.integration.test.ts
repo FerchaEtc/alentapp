@@ -16,7 +16,7 @@ vi.mock('../infrastructure/PostgresSportRepository.js', () => {
     return {
         PostgresSportRepository: class {
             async findAll() { return [existingSport]; }
-            async findByName(_name: string) { return null; }
+            async findByName(name: string) { return name === existingSport.name ? existingSport : null; }
             async create(data: CreateSportRequest) { return { id: '2', ...data }; }
         }
     };
@@ -74,6 +74,26 @@ describe('Sport API Integration Tests', () => {
             const body = JSON.parse(response.payload);
             expect(body.data.name).toBe('Natación');
             expect(body.data.id).toBeDefined();
+        });
+
+        it('debe retornar 409 si ya existe un deporte con ese nombre', async () => {
+            const payload: CreateSportRequest = {
+                name: 'Tenis',
+                description: 'Cancha de polvo de ladrillo',
+                max_capacity: 20,
+                additional_price: 0,
+                requires_medical_certificate: false,
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/sports',
+                payload
+            });
+
+            expect(response.statusCode).toBe(409);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('Ya existe un deporte con ese nombre');
         });
     });
 });
