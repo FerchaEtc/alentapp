@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
-import { CreateSportRequest, SportDTO } from '@alentapp/shared';
+import { CreateSportRequest, SportDTO, UpdateSportRequest } from '@alentapp/shared';
 
 vi.mock('../infrastructure/PostgresSportRepository.js', () => {
     const existingSport: SportDTO = {
@@ -17,7 +17,9 @@ vi.mock('../infrastructure/PostgresSportRepository.js', () => {
         PostgresSportRepository: class {
             async findAll() { return [existingSport]; }
             async findByName(name: string) { return name === existingSport.name ? existingSport : null; }
+            async findById(id: string) { return id === existingSport.id ? existingSport : null; }
             async create(data: CreateSportRequest) { return { id: '2', ...data }; }
+            async update(id: string, data: UpdateSportRequest) { return { ...existingSport, ...data, id }; }
         }
     };
 });
@@ -114,6 +116,28 @@ describe('Sport API Integration Tests', () => {
             expect(response.statusCode).toBe(400);
             const body = JSON.parse(response.payload);
             expect(body.error).toBe('La capacidad debe ser mayor a cero');
+        });
+    });
+
+    describe('PUT /api/v1/sports/:id', () => {
+        it('debe retornar 200 y actualizar descripción y capacidad máxima', async () => {
+            const payload: UpdateSportRequest = {
+                description: 'Cancha renovada',
+                max_capacity: 30,
+            };
+
+            const response = await app.inject({
+                method: 'PUT',
+                url: '/api/v1/sports/1',
+                payload
+            });
+
+            expect(response.statusCode).toBe(200);
+            const body = JSON.parse(response.payload);
+            expect(body.data.id).toBe('1');
+            expect(body.data.name).toBe('Tenis');
+            expect(body.data.description).toBe('Cancha renovada');
+            expect(body.data.max_capacity).toBe(30);
         });
     });
 });
