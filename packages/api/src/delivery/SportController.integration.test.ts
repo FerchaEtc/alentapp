@@ -152,7 +152,17 @@ describe('Sport API Integration Tests', () => {
             expect(response.statusCode).toBe(204);
             expect(response.payload).toBe('');
         });
-    });
 
+        it('debe retornar 404 si el deporte a eliminar no existe', async () => {
+            const response = await app.inject({
+                method: 'DELETE',
+                url: "/api/v1/sports/999"
+            });
+
+            expect(response.statusCode).toBe(404);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('El deporte no existe');
+        });
+    });
 
 });
