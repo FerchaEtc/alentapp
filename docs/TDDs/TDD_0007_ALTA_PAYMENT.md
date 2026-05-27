@@ -1,6 +1,6 @@
 ---
 id: 0007
-estado: Propuesto
+estado: Prpuesto
 autor: Nahuel Iróz
 fecha: 2026-04-20
 titulo: Registro de Nuevos Pagos

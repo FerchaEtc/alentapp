@@ -1,6 +1,6 @@
 ---
 id: 0009
-estado: Prpuesti
+estado: Propuesto
 autor: Nahuel Iróz
 fecha: 2026-04-20
 titulo: Modificacion de Pagos
@@ -49,7 +49,7 @@ Este caso de uso opera sobre la entidad Payment existente, modificando y complet
 
 | Escenario                  | Resultado Esperado                            | Código HTTP actual        |
 | -------------------------- | --------------------------------------------- | ------------------------- |
-| Pago inexistente           | Mensaje: "El Pago no existe"                  | 400 not found             |
+| Pago inexistente           | Mensaje: "El Pago no existe"                  | 404 not found             |
 | Cuota pagada               | Mensaje: "La cuot ya se encuentra pagada  "   | 400 Bad request           |
 | Error de conexión a DB     | Mensaje: "Error interno, reintente más tarde" | 500 Internal Server Error |
 

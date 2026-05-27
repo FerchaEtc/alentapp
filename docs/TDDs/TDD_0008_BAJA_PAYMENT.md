@@ -1,4 +1,6 @@
 ---
+id: 0008
+estado: Propuesto
 autor: Nahuel Iróz
 fecha: 2026-05-03
 titulo: Eliminacion de pagos
