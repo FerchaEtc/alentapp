@@ -6,6 +6,8 @@
     "scripts": {
         "dev": "tsx watch src/app.ts",
         "test": "vitest",
+        "test:e2e": "DOTENV_CONFIG_PATH=.env.test vitest run src/delivery/*.e2e.test.ts",
+        "test:e2e:sport": "DOTENV_CONFIG_PATH=.env.test vitest run src/delivery/Sport.e2e.test.ts",
         "coverage": "vitest run --coverage"
     },
     "dependencies": {
