@@ -38,6 +38,13 @@ export class PaymentController {
         return reply.status(400).send({ error: "Socio no encontrado." });
       }
 
+      const inputAmount= Number(body.amount);
+      if (isNaN(inputAmount) || inputAmount <= 0) {
+  return reply.status(400).send({ 
+    error: "El monto a cobrar debe ser un número positivo mayor a cero." 
+  });
+}
+
       let parsedDueDate: Date;
       if (body.dueDate && typeof body.dueDate === 'string') {
         const parts = body.dueDate.includes('/') ? body.dueDate.split('/') : body.dueDate.split('-');
