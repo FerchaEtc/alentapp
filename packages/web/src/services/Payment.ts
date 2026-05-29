@@ -31,3 +31,4 @@ export const updatePaymentStatus = async (id: string, status: 'Pending' | 'Paid'
 
   return await response.json();
 };
+
