@@ -20,4 +20,5 @@ export interface Payment {
   dueDate: Date;
   memberId: string;
   createdAt: Date; 
+  paymentDate: null
 }
