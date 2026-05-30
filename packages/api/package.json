@@ -6,8 +6,11 @@
     "scripts": {
         "dev": "tsx watch src/app.ts",
         "test": "vitest",
-        "test:e2e": "DOTENV_CONFIG_PATH=.env.test vitest run src/delivery/*.e2e.test.ts",
-        "test:e2e:sport": "DOTENV_CONFIG_PATH=.env.test vitest run src/delivery/Sport.e2e.test.ts",
+        "test:e2e:prepare": "docker compose -f ../../docker-compose.e2e.yml --project-name alentapp-e2e up -d --wait db-test && DOTENV_CONFIG_PATH=.env.test prisma migrate deploy --config prisma.config.ts",
+        "test:e2e:vitest": "DOTENV_CONFIG_PATH=.env.test vitest run src/delivery/*.e2e.test.ts",
+        "test:e2e:sport:vitest": "DOTENV_CONFIG_PATH=.env.test vitest run src/delivery/Sport.e2e.test.ts",
+        "test:e2e": "npm run test:e2e:vitest",
+        "test:e2e:sport": "npm run test:e2e:sport:vitest",
         "coverage": "vitest run --coverage"
     },
     "dependencies": {
