@@ -20,4 +20,18 @@ export class EquipmentLoanValidator {
             throw new Error('Solo los socios de categoría Pleno o Honorario pueden acceder a este beneficio');
         }
     }
+
+    // Validacion de fecha para prestamos
+    validateDueDate(dueDateString: string): void {
+        const dueDate = new Date(dueDateString);
+        const today = new Date();
+
+        // Reseteamos horas, minutos y segundos para comparar solo los días
+        today.setHours(0, 0, 0, 0);
+        dueDate.setHours(0, 0, 0, 0);
+
+        if (dueDate < today) {
+            throw new Error('La fecha de devolución no puede ser anterior a la fecha de hoy');
+        }
+    }
 }
