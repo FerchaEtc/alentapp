@@ -213,6 +213,7 @@ import {
                     <Input 
                       type="date" 
                       value={formData.due_date}
+                      min={new Date().toISOString().split('T')[0]} // Esto deshabilita visualmente los días pasados
                       onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                       required
                     />
