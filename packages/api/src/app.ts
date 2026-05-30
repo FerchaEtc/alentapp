@@ -96,7 +96,7 @@ export function buildApp() {
     // --- INSTANCIACIÓN DE EQUIPMENT LOANS ---
     const equipmentLoanRepo = new PostgresEquipmentLoanRepository();
     const equipmentLoanValidator = new EquipmentLoanValidator(memberRepo)
-    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo);
+    const createEquipmentLoanUseCase = new CreateEquipmentLoanUseCase(equipmentLoanRepo, memberRepo, equipmentLoanValidator);
     const updateEquipmentLoanUseCase = new UpdateEquipmentLoanUseCase(equipmentLoanRepo, equipmentLoanValidator);
     const deleteEquipmentLoanUseCase = new DeleteEquipmentLoanUseCase(equipmentLoanRepo);
     const getEquipmentLoanUseCase = new GetEquipmentLoansUseCase(equipmentLoanRepo)
