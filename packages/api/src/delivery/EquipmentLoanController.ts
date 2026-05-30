@@ -97,6 +97,11 @@ export class EquipmentLoanController {
             return reply.status(400).send({ error: error.message });
         }
 
+        // Fecha anterior a la de hoy
+        if (error.message.includes('anterior a la fecha de hoy')) {
+            return reply.status(400).send({ error: error.message }); // Error 400 Bad Request
+        }
+
         return reply.status(500).send({ error: 'Error interno, reintente más tarde' });
     }
 }
