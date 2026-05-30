@@ -20,3 +20,4 @@ test/test-report.json
 *.ntvs*
 *.njsproj
 *.sln
+alentapp.code-workspace
