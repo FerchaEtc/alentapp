@@ -11,7 +11,7 @@ export class EquipmentLoanValidator {
         }
 
         if (member.category === 'Cadete') {
-            throw new Error('Los socios Cadet tiene prohibido solicitar material'); // Error 403
+            throw new Error('Los socios Cadete tienen prohibido solicitar material'); // Error 403
         }
 
         // Solo se permite a Pleno o Lifetime
