@@ -8,7 +8,8 @@ const repoRoot = resolve(apiDir, '../..');
 
 function run(command: string, args: string[], cwd: string): Promise<void> {
     return new Promise((resolveProcess, rejectProcess) => {
-        const child = spawn(command, args, {
+        const quotedArgs = args.map(a => (a.includes(' ') ? `"${a}"` : a));
+        const child = spawn(command, quotedArgs, {
             cwd,
             env: process.env,
             stdio: 'inherit',
