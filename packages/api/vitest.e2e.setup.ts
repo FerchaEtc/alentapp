@@ -12,6 +12,7 @@ function run(command: string, args: string[], cwd: string): Promise<void> {
             cwd,
             env: process.env,
             stdio: 'inherit',
+            shell: true,
         });
 
         child.on('error', rejectProcess);
