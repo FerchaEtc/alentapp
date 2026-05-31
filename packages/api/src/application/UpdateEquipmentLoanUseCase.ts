@@ -15,6 +15,11 @@ export class UpdateEquipmentLoanUseCase {
             throw new Error('El préstamo referenciado no existe'); // Error 404
         }
 
+        // Si se envía una nueva fecha de devolución, validar que no sea del pasado
+        if (data.due_date) {
+            this.loanValidator.validateDueDate(data.due_date);
+        }
+
         // Si hay reasignación de socio, validar categoría
         if (data.member_id) {
             await this.loanValidator.validateMemberCategory(data.member_id);
