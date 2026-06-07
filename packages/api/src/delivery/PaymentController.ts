@@ -14,6 +14,7 @@ const requestDuration = meter.createHistogram('http.request.duration', { unit: '
 
 const prisma = new PrismaClient({
     adapter: new PrismaPg(process.env.DATABASE_URL!),
+    
 });
 
 export class PaymentController {
