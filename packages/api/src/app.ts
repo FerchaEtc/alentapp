@@ -145,7 +145,9 @@ export function buildApp() {
     return server;
 }
 
-if (process.argv[1] && process.argv[1].endsWith('app.ts')) {
+const entrypoint = process.argv[1] ?? '';
+
+if (entrypoint.endsWith('app.ts') || entrypoint.endsWith('app.js')) {
     const server = buildApp();
     const port = parseInt(process.env.PORT || '3000', 10);
 

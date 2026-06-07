@@ -4,6 +4,10 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/.env
+/.env.*
+!/.env.example
+packages/api/src/generated/
 test/unit/coverage
 test/e2e/reports
 test-results

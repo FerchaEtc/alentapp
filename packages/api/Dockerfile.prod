@@ -21,7 +21,7 @@ RUN npm ci
 
 COPY . .
 
-RUN if [ -f packages/api/prisma/schema.prisma ]; then npx prisma generate --schema=packages/api/prisma/schema.prisma; fi
+RUN if [ -f packages/api/prisma/schema.prisma ]; then DATABASE_URL=postgres://user:password@localhost:5432/db npm exec --workspace @alentapp/api -- prisma generate --schema=prisma/schema.prisma; fi
 
 RUN echo '{"extends": "./tsconfig.json", "compilerOptions": {"outDir": "packages/api/dist"}, "exclude": ["packages/web/**/*", "packages/web"]}' > tsconfig.api.json
 
@@ -38,14 +38,16 @@ RUN chown -R node:node /app
 COPY --chown=node:node --from=deps /app/node_modules ./node_modules
 
 COPY --chown=node:node --from=build /app/packages/api/dist ./packages/api/dist
+COPY --chown=node:node --from=build /app/packages/api/src/generated ./packages/api/dist/packages/api/src/generated
 COPY --chown=node:node --from=build /app/packages/api/package.json ./packages/api/package.json
-COPY --chown=node:node --from=build /app/packages/shared ./packages/shared
+COPY --chown=node:node --from=build /app/packages/api/dist/packages/shared ./packages/shared
+RUN node -e "const fs = require('fs'); fs.writeFileSync('packages/shared/package.json', JSON.stringify({ name: '@alentapp/shared', version: '1.0.0', type: 'module', main: 'index.js' }));" && chown node:node packages/shared/package.json
 
 USER node
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
 
 CMD ["node", "packages/api/dist/packages/api/src/app.js"]
