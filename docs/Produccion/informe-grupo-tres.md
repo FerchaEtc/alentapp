@@ -38,7 +38,8 @@ Nota: el endpoint de métricas `:9464` no se publica al host; se verifica dentro
 ## 4.4. Documentación de decisiones
 
 ### 1. Arquitectura final del sistema
-![alt text](image-1.png)
+
+![alt text](<imagen arquitectura.png>)
 
 ### 2. Decisiones técnicas y justificación
 
@@ -62,11 +63,6 @@ La integración de observabilidad presentó desafíos técnicos significativos:
 * Resolución: Se forzó el `import './infrastructure/telemetry.js';` como primera línea en el entrypoint (`app.ts`), garantizando que el SDK se registre en el ciclo de vida de la aplicación antes de cualquier otra lógica.
 
 
-
 ### 4.Dashboard RED (Evidencia de funcionamiento)
-
-La arquitectura de observabilidad permitió construir un Dashboard en Grafana que refleja en tiempo real el estado de salud de la API:
-
-* R (Rate): El contador `http_requests_total` permite identificar picos de carga.
-* E (Errors): La métrica `http_requests_errors` filtra automáticamente los códigos 4xx y 5xx, permitiendo una detección temprana de fallos en el frontend o fallas de validación.
-* D (Duration): El histograma `http_request_duration_ms` es vital para identificar cuellos de botella en la respuesta de los endpoints, permitiendo medir la latencia p95 y p99 de los servicios.
+![alt text](<imagen 1 grafana.png>)
+![alt text](<imagen 2 grafana.png>)
