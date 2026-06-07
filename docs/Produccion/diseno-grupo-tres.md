@@ -143,6 +143,196 @@ La configuración nginx debe contemplar:
 - Healthcheck: intervalo 30 segundos, timeout 5 segundos, 3 reintentos, `start_period` 5 segundos.
 - Configuración de API pública: debe inyectarse en build con variables `VITE_*` no sensibles. Ningún secreto debe quedar embebido en el bundle frontend.
 
+## c) `docker-compose.prod.yml`
+
+### Propósito
+
+Definir la orquestación productiva de AlentApp usando servicios separados para base de datos, API y frontend. Este archivo es necesario para ejecutar los contenedores con límites de recursos, healthchecks, políticas de seguridad, logging con rotación, red personalizada y variables sensibles provenientes de `.env`.
+
+El compose productivo no debe reutilizar montajes ni comandos de desarrollo. No debe montar el código fuente completo, no debe ejecutar watchers y no debe hardcodear credenciales.
+
+### Estructura
+
+Servicios propuestos:
+
+| Servicio | Imagen/build | Responsabilidad | Exposición |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | Persistencia PostgreSQL. | Solo red interna. |
+| `api` | Build con `packages/api/Dockerfile.prod` | API Fastify en puerto `3000`. | Red interna; opcionalmente publicar si se necesita acceso directo. |
+| `web` | Build con `packages/web/Dockerfile.prod` | Servir frontend con nginx en puerto `80`. | Publicado al host o balanceador. |
+
+Capas de configuración:
+
+- Recursos: CPU y memoria definidos por servicio.
+- Salud: healthchecks para `db`, `api` y `web`.
+- Seguridad: filesystem de solo lectura cuando sea posible, capacidades Linux mínimas, `no-new-privileges` y usuario no-root en imágenes propias.
+- Logging: driver `json-file` con rotación.
+- Red: red bridge personalizada, no la default bridge.
+- Secretos/configuración: variables desde `.env`, nunca valores sensibles hardcodeados.
+- Persistencia: volumen nombrado para datos de PostgreSQL.
+
+### Diseño de servicios
+
+#### `db`
+
+- Usa `postgres:16-alpine`.
+- Lee `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB` desde `.env`.
+- Persiste datos en volumen nombrado `pgdata:/var/lib/postgresql/data`.
+- Healthcheck con `pg_isready -U $POSTGRES_USER -d $POSTGRES_DB`.
+- No publica `5432` al host en producción salvo necesidad operativa explícita.
+- Con `read_only: true`, debe declarar `tmpfs` para rutas temporales como `/tmp` y `/var/run/postgresql`, manteniendo writable solo el volumen de datos.
+
+#### `api`
+
+- Construye desde `packages/api/Dockerfile.prod`.
+- Recibe `DATABASE_URL`, `PORT=3000` y demás variables desde `.env`.
+- Depende de `db` con `condition: service_healthy`.
+- Healthcheck HTTP contra `localhost:3000`.
+- No monta el código fuente local.
+- Usa `read_only: true` y `tmpfs: /tmp` si la aplicación o Node necesitan temporales.
+- Aplica `cap_drop: [ALL]` y `security_opt: [no-new-privileges:true]`.
+
+#### `web`
+
+- Construye desde `packages/web/Dockerfile.prod`.
+- Sirve puerto interno `80` con nginx.
+- Publica `80:80` o se conecta a un reverse proxy externo, según el entorno.
+- Depende de `api` con `condition: service_healthy` si nginx se configura para proxy o si el despliegue requiere API disponible antes del frontend.
+- Healthcheck HTTP contra `localhost:80`.
+- Usa `read_only: true` con `tmpfs` para `/var/cache/nginx`, `/var/run` y `/tmp`.
+- Aplica `cap_drop: [ALL]`, `cap_add: [NET_BIND_SERVICE]` si nginx escucha en puerto `80`, y `security_opt: [no-new-privileges:true]`.
+
+### Fragmento de configuración esperado
+
+```yaml
+services:
+  db:
+    image: postgres:16-alpine
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - alentapp_prod
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    cpus: "1.0"
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile.prod
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - alentapp_prod
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    cpus: "0.75"
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *default-logging
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile.prod
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      - alentapp_prod
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    cpus: "0.25"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging: *default-logging
+
+volumes:
+  pgdata:
+
+networks:
+  alentapp_prod:
+    name: alentapp-prod-net
+    driver: bridge
+```
+
+### Variables esperadas en `.env`
+
+```dotenv
+POSTGRES_USER=...
+POSTGRES_PASSWORD=...
+POSTGRES_DB=...
+DATABASE_URL=postgres://USER:PASSWORD@db:5432/DB_NAME
+```
+
+Las variables `VITE_*` del frontend solo deben contener configuración pública, porque quedan embebidas en el bundle generado por Vite.
+
+### Requisitos no funcionales
+
+- Límites de recursos definidos por servicio: `db` hasta 1 CPU/512 MB, `api` hasta 0.75 CPU/512 MB, `web` hasta 0.25 CPU/128 MB.
+- Healthchecks obligatorios: `db` con `pg_isready`, `api` contra `localhost:3000` y `web` contra `localhost:80`.
+- Seguridad: `read_only: true`, `cap_drop: ALL`, `security_opt: no-new-privileges:true`; `cap_add: NET_BIND_SERVICE` solo en servicios que necesiten bindear puertos privilegiados, como nginx en `80`.
+- Logging: `json-file` con `max-size: 10m` y `max-file: 3` para evitar crecimiento ilimitado de logs.
+- Red: todos los servicios conectados a `alentapp-prod-net`, una red bridge personalizada en lugar de la default bridge.
+- Secretos: valores sensibles desde `.env`; el archivo `.env` no debe versionarse ni copiarse a imágenes.
+- Persistencia: los datos de PostgreSQL viven en volumen nombrado, no en filesystem efímero del contenedor.
+- Arranque: `api` espera a `db` saludable; `web` puede esperar a `api` saludable si depende de proxy o chequeo integral.
+- Inmutabilidad: no se montan fuentes locales ni se ejecutan comandos de desarrollo en producción.
+
 
 # 2.2. Diseño de la observabilidad
 
@@ -375,3 +565,30 @@ scrape_configs:
 ```
 
 Grafana se conecta a Prometheus como datasource. El dashboard RED consulta las series recolectadas desde ese job.
+
+## c) Dashboard RED en Grafana
+
+El dashboard debe tener al menos 6 paneles para cubrir tráfico, errores, latencia, distribución de respuestas, recursos y cuellos de botella.
+
+| Panel | Métrica | Tipo de gráfico | Propósito |
+| --- | --- | --- | --- |
+| 1. Requests por segundo | `sum by (method, route) (rate(http_requests_total[1m]))` | Time series | Ver el tráfico actual de la API por endpoint. |
+| 2. Tasa de error | `(sum(rate(http_requests_errors_total[1m])) / sum(rate(http_requests_total[1m]))) * 100` | Time series | Medir el porcentaje de requests fallidas. |
+| 3. Latencia p95/p99 | `histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_bucket[5m])))` y `histogram_quantile(0.99, sum by (le, route) (rate(http_request_duration_bucket[5m])))` | Time series | Observar la performance percibida y detectar degradación. |
+| 4. Por status code | `sum by (status) (rate(http_requests_total[1m]))` | Stacked area | Ver la distribución de respuestas `2xx`, `3xx`, `4xx` y `5xx`. |
+| 5. Memoria del proceso | `process_memory_usage` | Time series | Controlar consumo de recursos del proceso Node.js. |
+| 6. Endpoints más lentos | `topk(5, histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_bucket[5m]))))` | Bar chart horizontal | Identificar cuellos de botella por endpoint. |
+
+## Criterios de aceptación
+
+- La API expone métricas con `PrometheusExporter` en `0.0.0.0:9464/metrics`.
+- El SDK se inicializa antes de crear el servidor Fastify.
+- Están habilitadas las auto-instrumentaciones de HTTP y Fastify.
+- Las tres métricas RED existen y usan los tipos solicitados: `Counter`, `Counter` e `Histogram`.
+- `Rate` se calcula desde `http.requests.total` usando `rate()` en Prometheus.
+- `Errors` cuenta respuestas `4xx` y `5xx`.
+- `Duration` registra latencia en milisegundos y permite calcular percentiles.
+- `process.memory.usage` reporta memoria del proceso como `ObservableGauge`.
+- `http.requests.active` reporta requests concurrentes como `ObservableGauge`.
+- Los labels usan rutas normalizadas y no incluyen datos sensibles ni IDs.
+- El dashboard de Grafana tiene al menos 6 paneles: requests por segundo, tasa de error, latencia p95/p99, status code, memoria y endpoints más lentos.
