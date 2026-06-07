@@ -294,3 +294,84 @@ server.addHook('onResponse', async (request, reply) => {
 ```
 
 La métrica `Rate` no se registra como un valor calculado por la API. La API solo incrementa el contador `http.requests.total`; luego Prometheus calcula las requests por segundo con una consulta `rate()`.
+
+## b) OpenTelemetry SDK
+
+La configuración del SDK debe inicializarse antes de levantar Fastify. El archivo recomendado es `packages/api/src/telemetry.ts` y luego debe importarse al inicio de `packages/api/src/app.ts` o del entrypoint productivo.
+
+Estructura conceptual de la configuración:
+
+```ts
+import { metrics } from '@opentelemetry/api';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+
+const prometheusExporter = new PrometheusExporter({
+  host: process.env.OTEL_EXPORTER_PROMETHEUS_HOST ?? '0.0.0.0',
+  port: Number(process.env.OTEL_EXPORTER_PROMETHEUS_PORT ?? 9464),
+  endpoint: '/metrics',
+});
+
+const sdk = new NodeSDK({
+  resource: resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? 'alentapp-api',
+    'deployment.environment': process.env.NODE_ENV ?? 'production',
+  }),
+  metricReader: prometheusExporter,
+  instrumentations: [
+    getNodeAutoInstrumentations({
+      '@opentelemetry/instrumentation-http': { enabled: true },
+      '@opentelemetry/instrumentation-fastify': { enabled: true },
+    }),
+  ],
+});
+
+sdk.start();
+
+export const meter = metrics.getMeter('alentapp-api');
+```
+
+Configuración a implementar:
+
+| Elemento | Diseño |
+| --- | --- |
+| Exportador | `PrometheusExporter` en `0.0.0.0:9464/metrics`. |
+| Auto-instrumentación HTTP | Habilitada para capturar requests entrantes, salientes y atributos HTTP estándar. |
+| Auto-instrumentación Fastify | Habilitada para capturar rutas normalizadas y contexto del framework. |
+| Métricas personalizadas | Las métricas RED definidas arriba se crean con el `meter` exportado por `telemetry.ts`. |
+| Inicio del SDK | Debe ocurrir antes de registrar rutas o iniciar `server.listen()`. |
+| Apagado ordenado | En `SIGINT` y `SIGTERM` se debe ejecutar `sdk.shutdown()` junto con `server.close()`. |
+
+En el entrypoint de la API se debe importar la telemetría antes de construir el servidor:
+
+```ts
+import './telemetry.js';
+import { buildApp } from './app.js';
+```
+
+Los hooks de Fastify definidos en la sección anterior usan el `meter` de este SDK para registrar `http.requests.total`, `http.requests.errors`, `http.request.duration`, `http.requests.active` y `process.memory.usage`.
+
+## Exposición para Prometheus
+
+La API debe exponer métricas con el `PrometheusExporter`. Prometheus no recibe datos por push; scrapea periódicamente el endpoint `/metrics` de la API.
+
+Flujo propuesto:
+
+```text
+AlentApp API -> PrometheusExporter :9464/metrics -> Prometheus -> Grafana
+```
+
+Configuración conceptual de Prometheus:
+
+```yaml
+scrape_configs:
+  - job_name: alentapp-api
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['api:9464']
+```
+
+Grafana se conecta a Prometheus como datasource. El dashboard RED consulta las series recolectadas desde ese job.
