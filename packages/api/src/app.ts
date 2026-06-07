@@ -1,5 +1,10 @@
-import 'dotenv/config';
+// PRIMERO: inicializar OpenTelemetry (antes de cualquier otro import)
+import './infrastructure/telemetry.js';
+
+// Luego el resto de imports...
 import Fastify from 'fastify';
+
+import 'dotenv/config';
 import cors from '@fastify/cors';
 import { SPORT_ENDPOINTS } from '@alentapp/shared';
 import { PostgresMemberRepository } from './infrastructure/PostgresMemberRepository.js';
@@ -9,6 +14,7 @@ import { GetMembersUseCase } from './application/GetMembersUseCase.js';
 import { UpdateMemberUseCase } from './application/UpdateMemberUseCase.js'; 
 import { MemberController } from './delivery/MemberController.js';
 import { DeleteMemberUseCase } from './application/DeleteMemberUseCase.js';
+import { NodeSDK } from '@opentelemetry/sdk-node';
 
 // --- IMPORTS DE PAGOS (PAYMENTS) ---
 import { PostgresPaymentRepository } from './infrastructure/PostgresPaymentRepository.js'; 
