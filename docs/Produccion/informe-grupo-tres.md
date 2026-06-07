@@ -70,14 +70,3 @@ La arquitectura de observabilidad permitió construir un Dashboard en Grafana qu
 * R (Rate): El contador `http_requests_total` permite identificar picos de carga.
 * E (Errors): La métrica `http_requests_errors` filtra automáticamente los códigos 4xx y 5xx, permitiendo una detección temprana de fallos en el frontend o fallas de validación.
 * D (Duration): El histograma `http_request_duration_ms` es vital para identificar cuellos de botella en la respuesta de los endpoints, permitiendo medir la latencia p95 y p99 de los servicios.
-
-
-
-| Métrica			 	| Antes (desarrollo)            | Después (producción)                                     | Mejora |
-| --------------------- | ----------------------------- | -------------------------------------------------------- | ------ |
-| Tamaño imagen API 	| docker images api             | docker images api:prod                                   |        |
-| Tamaño imagen Web 	| docker images web             | docker images web:prod                                   |        |
-| Tiempo de startup API | time docker compose up -d api | time docker compose -f docker-compose.prod.yml up -d api |        |
-| Memoria API (idle) 	| docker stats --no-stream api  | docker stats --no-stream alentapp-api                    |        |
-| Endpoints accesibles 	| curl :3000/...                | curl :3000/...                                           |        |
-| Frontend vía nginx 	| —                             | curl localhost/                                          |        |
