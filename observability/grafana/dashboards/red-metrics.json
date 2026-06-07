@@ -500,8 +500,8 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "process_memory_usage",
-          "legendFormat": "{{state}}",
+          "expr": "sum by (v8js_heap_space_name) (v8js_memory_heap_used)",
+          "legendFormat": "{{v8js_heap_space_name}}",
           "range": true,
           "refId": "A"
         }

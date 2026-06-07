@@ -43,6 +43,8 @@ COPY --chown=node:node --from=build /app/packages/api/package.json ./packages/ap
 COPY --chown=node:node --from=build /app/packages/api/dist/packages/shared ./packages/shared
 RUN node -e "const fs = require('fs'); fs.writeFileSync('packages/shared/package.json', JSON.stringify({ name: '@alentapp/shared', version: '1.0.0', type: 'module', main: 'index.js' }));" && chown node:node packages/shared/package.json
 
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 USER node
 
 EXPOSE 3000
