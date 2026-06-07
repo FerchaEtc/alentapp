@@ -58,6 +58,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    sysctls:
+      net.ipv4.ping_group_range: "0 0"
     cpus: "0.75"
     mem_limit: 512m
     healthcheck:
