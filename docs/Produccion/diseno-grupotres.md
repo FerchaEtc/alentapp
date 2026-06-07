@@ -142,3 +142,155 @@ La configuración nginx debe contemplar:
 - Seguridad: headers HTTP aplicados en todas las respuestas estáticas.
 - Healthcheck: intervalo 30 segundos, timeout 5 segundos, 3 reintentos, `start_period` 5 segundos.
 - Configuración de API pública: debe inyectarse en build con variables `VITE_*` no sensibles. Ningún secreto debe quedar embebido en el bundle frontend.
+
+
+# 2.2. Diseño de la observabilidad
+
+Este documento especifica cómo integrar OpenTelemetry en la API de AlentApp para capturar métricas de producción. La API actual está implementada con Node.js y Fastify, por lo que la instrumentación se propone en el proceso de la API y se expone mediante un `PrometheusExporter` para que Prometheus pueda recolectarla.
+
+## Objetivo
+
+La observabilidad debe permitir responder tres preguntas operativas sobre la API:
+
+- ¿Cuánto tráfico recibe el servicio?
+- ¿Cuántas requests fallan?
+- ¿Cuánto tardan en responder los endpoints?
+
+Para eso se usa el método RED: Rate, Errors y Duration. Además, se agregan métricas de memoria del proceso y cantidad de requests concurrentes para detectar saturación del runtime.
+
+## Integración de OpenTelemetry en la API
+
+La integración propuesta es:
+
+1. Agregar dependencias OpenTelemetry a `packages/api`.
+2. Crear un módulo `packages/api/src/telemetry.ts` que inicialice el SDK, el `Meter` y el `PrometheusExporter`.
+3. Cargar `telemetry.ts` antes de crear el servidor Fastify, para que las métricas queden disponibles desde el arranque.
+4. Registrar hooks de Fastify para medir cada request.
+5. Exponer las métricas con `PrometheusExporter` en el puerto `9464`.
+6. Hacer que Prometheus lea el endpoint `/metrics` y que Grafana use Prometheus como datasource para dashboards y alertas.
+
+Dependencias recomendadas:
+
+```bash
+npm install -w packages/api @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/sdk-metrics @opentelemetry/exporter-prometheus @opentelemetry/auto-instrumentations-node @opentelemetry/resources @opentelemetry/semantic-conventions
+```
+
+Variables de entorno esperadas en producción:
+
+| Variable | Valor recomendado | Propósito |
+| --- | --- | --- |
+| `OTEL_SERVICE_NAME` | `alentapp-api` | Nombre del servicio en dashboards y métricas. |
+| `OTEL_EXPORTER_PROMETHEUS_HOST` | `0.0.0.0` | Interfaz donde se expone el endpoint de métricas. |
+| `OTEL_EXPORTER_PROMETHEUS_PORT` | `9464` | Puerto donde Prometheus scrapea las métricas. |
+| `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment=production` | Atributos comunes para filtrar por ambiente. |
+
+## a) Métricas RED a capturar
+
+| Métrica | Tipo OpenTelemetry | Descripción | Labels |
+| --- | --- | --- | --- |
+| Rate (`http.requests.total`) | `Counter` | Cantidad total de requests HTTP recibidas. Las requests por segundo se calculan en Prometheus con `rate(http_requests_total[5m])`. | `method`, `route`, `status` |
+| Errors (`http.requests.errors`) | `Counter` | Cantidad de requests que terminan con status `4xx` o `5xx`. La tasa de error se calcula dividiendo los errores por el total de requests. | `method`, `route`, `status` |
+| Duration (`http.request.duration`) | `Histogram` | Latencia de cada request en milisegundos. Permite calcular percentiles como p50, p95 y p99 por endpoint. | `method`, `route` |
+
+### Labels
+
+Los labels deben mantenerse con baja cardinalidad:
+
+- `method`: verbo HTTP normalizado, por ejemplo `GET`, `POST`, `PUT`, `PATCH` o `DELETE`.
+- `route`: ruta normalizada de Fastify, por ejemplo `/api/v1/socios/:id`; no se debe usar la URL real con IDs.
+- `status`: código HTTP de respuesta, por ejemplo `200`, `201`, `400`, `404` o `500`.
+
+No se deben usar labels con datos variables como IDs de socios, IDs de pagos, tokens, emails, nombres de usuario o query strings.
+
+## Métricas adicionales
+
+| Métrica | Tipo OpenTelemetry | Descripción | Labels |
+| --- | --- | --- | --- |
+| `process.memory.usage` | `ObservableGauge` | Memoria usada por el proceso Node.js. Se obtiene con `process.memoryUsage()` y se reporta en bytes. | `state` (`rss`, `heapTotal`, `heapUsed`, `external`, `arrayBuffers`) |
+| `http.requests.active` | `ObservableGauge` | Cantidad de requests HTTP concurrentes que están siendo procesadas por la API. | Sin labels obligatorios para mantener baja cardinalidad. |
+
+## Diseño de instrumentación
+
+El módulo `telemetry.ts` debe crear los instrumentos de métricas:
+
+```ts
+const httpRequestsTotal = meter.createCounter('http.requests.total', {
+  description: 'Total de requests HTTP recibidas',
+  unit: '1',
+});
+
+const httpRequestsErrors = meter.createCounter('http.requests.errors', {
+  description: 'Total de requests HTTP con status 4xx o 5xx',
+  unit: '1',
+});
+
+const httpRequestDuration = meter.createHistogram('http.request.duration', {
+  description: 'Duración de requests HTTP',
+  unit: 'ms',
+});
+
+let activeRequests = 0;
+
+const activeRequestsGauge = meter.createObservableGauge('http.requests.active', {
+  description: 'Requests HTTP concurrentes',
+  unit: '1',
+});
+
+activeRequestsGauge.addCallback((observer) => {
+  observer.observe(activeRequests);
+});
+
+const memoryGauge = meter.createObservableGauge('process.memory.usage', {
+  description: 'Memoria usada por el proceso Node.js',
+  unit: 'By',
+});
+
+memoryGauge.addCallback((observer) => {
+  const memory = process.memoryUsage();
+
+  observer.observe(memory.rss, { state: 'rss' });
+  observer.observe(memory.heapTotal, { state: 'heapTotal' });
+  observer.observe(memory.heapUsed, { state: 'heapUsed' });
+  observer.observe(memory.external, { state: 'external' });
+  observer.observe(memory.arrayBuffers, { state: 'arrayBuffers' });
+});
+```
+
+En `buildApp()` se deben registrar hooks de Fastify para medir cada request:
+
+```ts
+const requestStartTimes = new WeakMap<object, number>();
+
+server.addHook('onRequest', async (request) => {
+  activeRequests += 1;
+  requestStartTimes.set(request.raw, performance.now());
+});
+
+server.addHook('onResponse', async (request, reply) => {
+  const startedAt = requestStartTimes.get(request.raw) ?? performance.now();
+  const durationMs = performance.now() - startedAt;
+  const route = request.routeOptions?.url ?? 'unmatched';
+  const status = String(reply.statusCode);
+
+  const commonLabels = {
+    method: request.method,
+    route,
+    status,
+  };
+
+  httpRequestsTotal.add(1, commonLabels);
+
+  if (reply.statusCode >= 400) {
+    httpRequestsErrors.add(1, commonLabels);
+  }
+
+  httpRequestDuration.record(durationMs, {
+    method: request.method,
+    route,
+  });
+
+  activeRequests = Math.max(0, activeRequests - 1);
+});
+```
+
+La métrica `Rate` no se registra como un valor calculado por la API. La API solo incrementa el contador `http.requests.total`; luego Prometheus calcula las requests por segundo con una consulta `rate()`.
