@@ -1,7 +1,7 @@
-// PRIMERO: inicializar OpenTelemetry (antes de cualquier otro import)
-import './infrastructure/telemetry.js';
 
-// Luego el resto de imports...
+import './infrastructure/telemetry.js';
+import { createREDMetrics, meter } from './infrastructure/telemetry.js';
+const { requestCounter, errorCounter, requestDuration } = createREDMetrics(meter);
 import Fastify from 'fastify';
 
 import 'dotenv/config';
