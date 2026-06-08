@@ -36,3 +36,20 @@ process.on('SIGTERM', () => {
 });
 
 export const meter = metrics.getMeter('alentapp-api');
+
+export function createREDMetrics(meterInstance: Meter) {
+  const requestCounter = meterInstance.createCounter('http.requests.total', {
+    description: 'Total de requests HTTP',
+  });
+  
+  const errorCounter = meterInstance.createCounter('http.requests.errors', {
+    description: 'Total de errores HTTP',
+  });
+  
+  const requestDuration = meterInstance.createHistogram('http.request.duration', {
+    description: 'Duración de requests',
+    unit: 'ms',
+  });
+
+  return { requestCounter, errorCounter, requestDuration };
+}
